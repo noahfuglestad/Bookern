@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Bookern</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="app.js?v=1" defer></script>
+    <script src="app.js?v=2" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -14,16 +14,38 @@
         <span>Bookern</span>
       </a>
       <nav class="view-switch" aria-label="Velg visning">
-        <button class="view-button is-active" type="button" data-view="customer">Kunde</button>
+        <button class="view-button is-active" type="button" data-view="home">Start</button>
+        <button class="view-button" type="button" data-view="customer">Kunde</button>
         <button class="view-button" type="button" data-view="business">Bedrift</button>
       </nav>
     </header>
 
     <main>
-      <section class="intro">
+      <section class="welcome-view" data-panel="home">
+        <div class="welcome-hero">
+          <p class="eyebrow">Velkommen til Bookern</p>
+          <h1>En enklere måte å finne ledig tid og holde orden på bookinger.</h1>
+          <p class="lead">Velg om du skal booke hos en bedrift, eller om du vil bruke Bookern i din egen bedrift.</p>
+        </div>
+
+        <div class="choice-grid">
+          <button class="choice-card" type="button" data-view-target="customer">
+            <span>Kunde</span>
+            <strong>Jeg vil booke en time</strong>
+            <p>Søk opp bedriften, se ledige tider og send inn bookingen på noen få klikk.</p>
+          </button>
+          <button class="choice-card" type="button" data-view-target="business">
+            <span>Bedrift</span>
+            <strong>Jeg vil bruke Bookern</strong>
+            <p>Få oversikt over kalender, kunder og kapasitet i en ryddig bedriftsvisning.</p>
+          </button>
+        </div>
+      </section>
+
+      <section class="intro" data-context="booking" hidden>
         <div>
-          <p class="eyebrow">Booking for små bedrifter</p>
-          <h1>La kunder finne ledig tid, og gi bedriften full oversikt.</h1>
+          <p class="eyebrow" id="introEyebrow">Booking for små bedrifter</p>
+          <h1 id="introTitle">La kunder finne ledig tid, og gi bedriften full oversikt.</h1>
         </div>
         <div class="intro-panel" aria-label="Status">
           <span id="openSlotsCount">0</span>
@@ -31,11 +53,23 @@
         </div>
       </section>
 
-      <section class="app-shell" data-panel="customer">
+      <section class="customer-search" data-panel="customer" hidden>
+        <div class="section-heading">
+          <p class="eyebrow">Finn bedrift</p>
+          <h2>Hvem vil du booke hos?</h2>
+        </div>
+        <label class="search-label">
+          Søk etter navn, sted eller kategori
+          <input id="businessSearch" type="search" placeholder="For eksempel Nord frisør, Oslo eller velvære">
+        </label>
+        <div class="company-results" id="companyResults"></div>
+      </section>
+
+      <section class="app-shell" data-panel="customer" data-booking-shell hidden>
         <aside class="sidebar">
           <div class="section-heading">
             <p class="eyebrow">1. Velg tjeneste</p>
-            <h2>Hva vil kunden booke?</h2>
+            <h2 id="serviceTitle">Hva vil kunden booke?</h2>
           </div>
           <div class="service-list" id="serviceList"></div>
         </aside>
@@ -55,7 +89,7 @@
         <aside class="booking-panel">
           <div class="section-heading">
             <p class="eyebrow">3. Fullfør</p>
-            <h2>Book valgt time</h2>
+            <h2 id="bookingTitle">Book valgt time</h2>
           </div>
           <div class="selected-slot" id="selectedSlot">Velg en ledig tid i kalenderen.</div>
           <form id="bookingForm">
@@ -78,6 +112,19 @@
       </section>
 
       <section class="business-view" data-panel="business" hidden>
+        <div class="business-start">
+          <div>
+            <p class="eyebrow">Start med Bookern</p>
+            <h1>Gi kundene dine en enklere vei inn i kalenderen.</h1>
+            <p class="lead">Denne demoen viser hvordan en liten bedrift kan presentere tjenester, ta imot bookinger og holde oversikten samlet.</p>
+          </div>
+          <div class="setup-card">
+            <strong>Klar for neste steg</strong>
+            <p>Legg inn bedrift, tjenester og åpningstider. Etterpå kan kundene finne deg i søket.</p>
+            <button class="primary-button" type="button" data-view-target="customer">Se kundesiden</button>
+          </div>
+        </div>
+
         <div class="business-header">
           <div>
             <p class="eyebrow">Bedrift</p>

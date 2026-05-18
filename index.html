@@ -3,12 +3,122 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ny app</title>
+    <title>Bookern</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="app.js?v=1" defer></script>
   </head>
   <body>
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Bookern forsiden">
+        <span class="brand-mark">B</span>
+        <span>Bookern</span>
+      </a>
+      <nav class="view-switch" aria-label="Velg visning">
+        <button class="view-button is-active" type="button" data-view="customer">Kunde</button>
+        <button class="view-button" type="button" data-view="business">Bedrift</button>
+      </nav>
+    </header>
+
     <main>
-      <h1>Ny app</h1>
+      <section class="intro">
+        <div>
+          <p class="eyebrow">Booking for små bedrifter</p>
+          <h1>La kunder finne ledig tid, og gi bedriften full oversikt.</h1>
+        </div>
+        <div class="intro-panel" aria-label="Status">
+          <span id="openSlotsCount">0</span>
+          <p>ledige tider denne uken</p>
+        </div>
+      </section>
+
+      <section class="app-shell" data-panel="customer">
+        <aside class="sidebar">
+          <div class="section-heading">
+            <p class="eyebrow">1. Velg tjeneste</p>
+            <h2>Hva vil kunden booke?</h2>
+          </div>
+          <div class="service-list" id="serviceList"></div>
+        </aside>
+
+        <section class="scheduler" aria-label="Kalender for booking">
+          <div class="calendar-toolbar">
+            <button class="icon-button" id="prevWeek" type="button" aria-label="Forrige uke">‹</button>
+            <div>
+              <p class="eyebrow">2. Finn tid</p>
+              <h2 id="weekLabel">Denne uken</h2>
+            </div>
+            <button class="icon-button" id="nextWeek" type="button" aria-label="Neste uke">›</button>
+          </div>
+          <div class="calendar-grid" id="calendarGrid"></div>
+        </section>
+
+        <aside class="booking-panel">
+          <div class="section-heading">
+            <p class="eyebrow">3. Fullfør</p>
+            <h2>Book valgt time</h2>
+          </div>
+          <div class="selected-slot" id="selectedSlot">Velg en ledig tid i kalenderen.</div>
+          <form id="bookingForm">
+            <label>
+              Navn
+              <input id="customerName" name="customerName" autocomplete="name" required>
+            </label>
+            <label>
+              Telefon eller e-post
+              <input id="customerContact" name="customerContact" autocomplete="email" required>
+            </label>
+            <label>
+              Notat
+              <textarea id="customerNote" name="customerNote" rows="3" placeholder="Valgfritt"></textarea>
+            </label>
+            <button class="primary-button" type="submit">Book time</button>
+          </form>
+          <p class="form-message" id="formMessage" role="status"></p>
+        </aside>
+      </section>
+
+      <section class="business-view" data-panel="business" hidden>
+        <div class="business-header">
+          <div>
+            <p class="eyebrow">Bedrift</p>
+            <h2>Bookinger og kapasitet</h2>
+          </div>
+          <button class="secondary-button" id="resetDemo" type="button">Nullstill demo</button>
+        </div>
+
+        <div class="stats-row">
+          <article>
+            <span id="todayBookings">0</span>
+            <p>i dag</p>
+          </article>
+          <article>
+            <span id="weekBookings">0</span>
+            <p>denne uken</p>
+          </article>
+          <article>
+            <span id="weekCapacity">0%</span>
+            <p>uke fylt</p>
+          </article>
+        </div>
+
+        <div class="business-layout">
+          <section>
+            <div class="section-heading">
+              <p class="eyebrow">Oversikt</p>
+              <h2>Kommende bookinger</h2>
+            </div>
+            <div class="booking-list" id="bookingList"></div>
+          </section>
+
+          <section>
+            <div class="section-heading">
+              <p class="eyebrow">Dagsplan</p>
+              <h2 id="businessDayLabel">I dag</h2>
+            </div>
+            <div class="timeline" id="timeline"></div>
+          </section>
+        </div>
+      </section>
     </main>
   </body>
 </html>

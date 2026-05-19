@@ -168,16 +168,6 @@ main {
 }
 
 .welcome-hero h1,
-business-start h1 {
-  max-width: 940px;
-  margin: 0;
-  font-size: clamp(2.4rem, 6vw, 5.8rem);
-  line-height: 0.98;
-  font-weight: 850;
-  letter-spacing: 0;
-}
-
-.welcome-hero h1,
 .business-start h1 {
   max-width: 940px;
   margin: 0;

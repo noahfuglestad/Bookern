@@ -83,12 +83,15 @@ const todayBookings = document.querySelector("#todayBookings");
 const weekBookings = document.querySelector("#weekBookings");
 const weekCapacity = document.querySelector("#weekCapacity");
 const businessDayLabel = document.querySelector("#businessDayLabel");
+const businessSetupForm = document.querySelector("#businessSetupForm");
+const businessSetupMessage = document.querySelector("#businessSetupMessage");
 
 let selectedService = services[0];
 let selectedCompany = null;
 let selectedSlot = null;
 let weekOffset = 0;
 let bookings = usingSupabase ? [] : loadDemoBookings();
+const localBusinessServices = {};
 
 if (isEmbed) {
   document.body.classList.add("is-embed");
@@ -194,6 +197,37 @@ function normalizeService(service) {
   };
 }
 
+function slugify(value) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/æ/g, "ae")
+    .replace(/ø/g, "o")
+    .replace(/å/g, "a")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+}
+
+function parseSetupServices(value) {
+  return value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line, index) => {
+      const [name = "", duration = "30 min", price = ""] = line.split(",").map((part) => part.trim());
+      const durationMinutes = Number.parseInt(duration, 10) || 30;
+      return {
+        id: `${slugify(name) || "tjeneste"}-${index + 1}`,
+        name: name || `Tjeneste ${index + 1}`,
+        duration: durationMinutes,
+        price,
+        sortOrder: index + 1,
+      };
+    });
+}
+
 function normalizeBooking(booking) {
   return {
     id: booking.id,
@@ -228,7 +262,7 @@ async function loadCompaniesFromSupabase() {
 
 async function loadCompanyServices(company) {
   if (!usingSupabase || !company?.dbId) {
-    services = [...demoServices];
+    services = localBusinessServices[company?.id] ?? [...demoServices];
     selectedService = services[0];
     return;
   }
@@ -293,6 +327,59 @@ async function createSupabaseBooking(booking) {
 
   if (error) throw error;
   return normalizeBooking(data);
+}
+
+async function createBusinessProfile(profile, profileServices) {
+  const slug = slugify(profile.name);
+  if (!slug) throw new Error("Bedriften trenger et navn.");
+
+  if (!usingSupabase) {
+    const company = normalizeCompany({
+      id: slug,
+      slug,
+      name: profile.name,
+      category: profile.category,
+      city: profile.city,
+      description: profile.description,
+    });
+    companies = [...companies.filter((item) => item.id !== company.id), company];
+    localBusinessServices[company.id] = profileServices;
+    return company;
+  }
+
+  const { data: companyData, error: companyError } = await supabaseClient
+    .from("companies")
+    .insert({
+      slug,
+      name: profile.name,
+      category: profile.category,
+      city: profile.city,
+      description: profile.description,
+      is_published: true,
+    })
+    .select("id, slug, name, category, city, description")
+    .single();
+
+  if (companyError) throw companyError;
+
+  const serviceRows = profileServices.map((service) => ({
+    company_id: companyData.id,
+    name: service.name,
+    duration_minutes: service.duration,
+    price_text: service.price,
+    sort_order: service.sortOrder,
+    is_active: true,
+  }));
+
+  const { error: servicesError } = await supabaseClient
+    .from("services")
+    .insert(serviceRows);
+
+  if (servicesError) throw servicesError;
+
+  const company = normalizeCompany(companyData);
+  companies = [...companies.filter((item) => item.id !== company.id), company].sort((a, b) => a.name.localeCompare(b.name));
+  return company;
 }
 
 function renderCompanies() {
@@ -539,6 +626,35 @@ bookingForm.addEventListener("submit", async (event) => {
   selectedSlot = null;
   formMessage.textContent = "Timen er booket og lagt inn i bedriftsoversikten.";
   renderAll();
+});
+
+businessSetupForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const formData = new FormData(businessSetupForm);
+  const profile = {
+    name: formData.get("businessName").trim(),
+    category: formData.get("businessCategory").trim(),
+    city: formData.get("businessCity").trim(),
+    description: formData.get("businessDescription").trim(),
+  };
+  const profileServices = parseSetupServices(formData.get("businessServices"));
+
+  if (!profileServices.length) {
+    businessSetupMessage.textContent = "Legg inn minst én tjeneste.";
+    return;
+  }
+
+  businessSetupMessage.textContent = "Publiserer bedriften...";
+  try {
+    const company = await createBusinessProfile(profile, profileServices);
+    await loadCompaniesFromSupabase();
+    await selectCompany(company);
+    businessSetupForm.reset();
+    businessSetupMessage.textContent = `${company.name} er publisert. Kundene kan nå finne bedriften i søket.`;
+  } catch (error) {
+    console.error("Kunne ikke publisere bedrift", error);
+    businessSetupMessage.textContent = "Kunne ikke publisere bedriften. Sjekk at navnet ikke finnes fra før.";
+  }
 });
 
 document.querySelectorAll("[data-view]").forEach((button) => {

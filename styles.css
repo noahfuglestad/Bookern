@@ -84,7 +84,7 @@ button {
 
 .view-switch {
   display: inline-grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   min-width: 430px;
   padding: 4px;
   border: 1px solid var(--line);
@@ -323,14 +323,16 @@ main {
 }
 
 .feature-grid,
-.process-section {
+.process-section,
+.membership-steps {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
 }
 
 .feature-grid article,
-.process-section div {
+.process-section div,
+.membership-steps article {
   padding: 18px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -338,13 +340,18 @@ main {
 }
 
 .feature-grid strong,
-.process-section strong {
+.process-section strong,
+.membership-steps strong {
   display: block;
   font-size: 1.05rem;
 }
 
 .feature-grid p,
-.process-section p {
+.process-section p,
+.membership-steps p,
+.payment-row p,
+.demo-copy p,
+.price-card p {
   margin: 10px 0 0;
   color: var(--muted);
   line-height: 1.45;
@@ -365,6 +372,103 @@ main {
   background: var(--ink);
   color: #fff;
   font-weight: 850;
+}
+
+.demo-section,
+.pricing-section,
+.payment-panel,
+.membership-steps {
+  grid-column: 1 / -1;
+}
+
+.demo-section,
+.pricing-section,
+.payment-panel {
+  display: grid;
+  gap: 18px;
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.demo-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.42fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.demo-browser {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 8px;
+  background: #171717;
+  color: #fff;
+}
+
+.demo-copy,
+.price-card,
+.payment-row {
+  display: grid;
+  align-content: center;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-muted);
+}
+
+.demo-copy strong,
+.price-card strong,
+.payment-row strong {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  line-height: 1;
+}
+
+.pricing-section {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
+  align-items: center;
+}
+
+.price-card span {
+  color: var(--muted);
+  font-weight: 850;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+}
+
+.price-card .primary-button,
+.demo-copy .primary-button {
+  justify-self: start;
+  padding: 0 18px;
+}
+
+.membership-steps {
+  margin-bottom: 22px;
+}
+
+.membership-steps span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  margin-bottom: 16px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-weight: 850;
+}
+
+.payment-panel {
+  margin-bottom: 22px;
+}
+
+.payment-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
 }
 
 .company-card:hover,
@@ -766,7 +870,7 @@ textarea:focus {
 .auth-panel,
 .business-setup,
 .overview-controls,
-.availability-panel {
+availability-panel {
   display: grid;
   gap: 18px;
   margin-bottom: 22px;
@@ -1020,6 +1124,10 @@ textarea:focus {
   .business-start,
   .feature-grid,
   .process-section,
+  .membership-steps,
+  .demo-layout,
+  .pricing-section,
+  .payment-row,
   .dashboard-actions,
   .availability-days,
   .availability-grid,

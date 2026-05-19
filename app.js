@@ -325,6 +325,38 @@ function getAuthErrorMessage(error, mode) {
     : `Kunne ikke opprette konto: ${message || "ukjent feil"}. Prøv en gyldig e-post og et passord på minst 6 tegn.`;
 }
 
+function getSupabaseErrorText(error) {
+  return [error?.code, error?.message, error?.details, error?.hint]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+}
+
+function getBusinessPublishErrorMessage(error) {
+  const errorText = getSupabaseErrorText(error);
+  const normalized = errorText.toLowerCase();
+
+  if (normalized.includes("row-level security") || normalized.includes("rls")) {
+    return "Supabase stopper publisering med tilgangsregler. Kjør siste SQL fra supabase/schema.sql i Supabase SQL Editor, logg ut og inn igjen, og prøv på nytt.";
+  }
+
+  if (normalized.includes("duplicate") || normalized.includes("unique") || normalized.includes("companies_slug_key")) {
+    return "Dette bedriftsnavnet finnes allerede. Prøv et litt annet navn, for eksempel med sted eller avdeling.";
+  }
+
+  if (normalized.includes("jwt") || normalized.includes("auth") || normalized.includes("logget inn")) {
+    return "Innloggingen er utløpt. Logg ut, logg inn igjen, og prøv å publisere på nytt.";
+  }
+
+  if (normalized.includes("function") || normalized.includes("schema cache")) {
+    return "Supabase mangler siste database-oppsett. Kjør siste SQL fra supabase/schema.sql i Supabase SQL Editor, og prøv igjen.";
+  }
+
+  return errorText
+    ? `Kunne ikke publisere bedriften. Supabase sier: ${errorText}`
+    : "Kunne ikke publisere bedriften akkurat nå. Prøv igjen.";
+}
+
 function getPasswordChecks(password) {
   return {
     hasLength: password.length >= 6,
@@ -492,6 +524,35 @@ async function createBusinessProfile(profile, profileServices) {
     throw new Error("Du må være logget inn for å opprette en bedrift.");
   }
 
+  const serviceRows = profileServices.map((service) => ({
+    name: service.name,
+    duration_minutes: service.duration,
+    price_text: service.price,
+    sort_order: service.sortOrder,
+  }));
+
+  const { data: rpcCompanyData, error: rpcError } = await supabaseClient
+    .rpc("create_bookern_business", {
+      business_slug: slug,
+      business_name: profile.name,
+      business_category: profile.category,
+      business_city: profile.city,
+      business_description: profile.description,
+      business_services: serviceRows,
+    })
+    .single();
+
+  if (!rpcError) {
+    const company = normalizeCompany(rpcCompanyData);
+    companies = [...companies.filter((item) => item.id !== company.id), company].sort((a, b) => a.name.localeCompare(b.name));
+    ownedCompanies = [...ownedCompanies.filter((item) => item.id !== company.id), company].sort((a, b) => a.name.localeCompare(b.name));
+    return company;
+  }
+
+  const canUseDirectInsertFallback = ["42883", "PGRST202"].includes(rpcError.code)
+    || rpcError.message?.toLowerCase().includes("function");
+  if (!canUseDirectInsertFallback) throw rpcError;
+
   const { data: companyData, error: companyError } = await supabaseClient
     .from("companies")
     .insert({
@@ -508,7 +569,7 @@ async function createBusinessProfile(profile, profileServices) {
 
   if (companyError) throw companyError;
 
-  const serviceRows = profileServices.map((service) => ({
+  const directServiceRows = profileServices.map((service) => ({
     company_id: companyData.id,
     name: service.name,
     duration_minutes: service.duration,
@@ -519,7 +580,7 @@ async function createBusinessProfile(profile, profileServices) {
 
   const { error: servicesError } = await supabaseClient
     .from("services")
-    .insert(serviceRows);
+    .insert(directServiceRows);
 
   if (servicesError) throw servicesError;
 
@@ -896,7 +957,7 @@ businessSetupForm.addEventListener("submit", async (event) => {
     businessSetupMessage.textContent = `${company.name} er publisert. Kundene kan nå finne bedriften i søket.`;
   } catch (error) {
     console.error("Kunne ikke publisere bedrift", error);
-    businessSetupMessage.textContent = "Kunne ikke publisere bedriften. Sjekk at navnet ikke finnes fra før.";
+    businessSetupMessage.textContent = getBusinessPublishErrorMessage(error);
   }
 });
 

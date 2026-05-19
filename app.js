@@ -93,6 +93,8 @@ const authForm = document.querySelector("#authForm");
 const authEmail = document.querySelector("#authEmail");
 const authPassword = document.querySelector("#authPassword");
 const authMessage = document.querySelector("#authMessage");
+const passwordLengthCheck = document.querySelector("#passwordLengthCheck");
+const passwordSpecialCheck = document.querySelector("#passwordSpecialCheck");
 const signupButton = document.querySelector("#signupButton");
 const loginButton = document.querySelector("#loginButton");
 const logoutButton = document.querySelector("#logoutButton");
@@ -321,6 +323,21 @@ function getAuthErrorMessage(error, mode) {
   return mode === "login"
     ? `Kunne ikke logge inn: ${message || "ukjent feil"}. Prøv igjen, eller opprett konto hvis du ikke har en.`
     : `Kunne ikke opprette konto: ${message || "ukjent feil"}. Prøv en gyldig e-post og et passord på minst 6 tegn.`;
+}
+
+function getPasswordChecks(password) {
+  return {
+    hasLength: password.length >= 6,
+    hasSpecial: /[^A-Za-z0-9]/.test(password),
+  };
+}
+
+function renderPasswordChecks() {
+  const checks = getPasswordChecks(authPassword.value);
+  passwordLengthCheck.classList.toggle("is-valid", checks.hasLength);
+  passwordSpecialCheck.classList.toggle("is-valid", checks.hasSpecial);
+  passwordLengthCheck.textContent = `${checks.hasLength ? "✓" : "✕"} Minst 6 tegn`;
+  passwordSpecialCheck.textContent = `${checks.hasSpecial ? "✓" : "✕"} Minst 1 spesialtegn`;
 }
 
 async function loadCompaniesFromSupabase() {
@@ -718,6 +735,7 @@ serviceList.addEventListener("click", (event) => {
 });
 
 businessSearch.addEventListener("input", renderCompanies);
+authPassword.addEventListener("input", renderPasswordChecks);
 
 companyResults.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-company]");
@@ -758,6 +776,13 @@ signupButton.addEventListener("click", async () => {
 
   if (!authEmail.value.trim() || !authPassword.value) {
     authMessage.textContent = "Skriv e-post og passord først.";
+    return;
+  }
+
+  const passwordChecks = getPasswordChecks(authPassword.value);
+  if (!passwordChecks.hasLength || !passwordChecks.hasSpecial) {
+    authMessage.textContent = "Passordet må ha minst 6 tegn og minst 1 spesialtegn, for eksempel !, ? eller #.";
+    renderPasswordChecks();
     return;
   }
 
@@ -923,6 +948,7 @@ async function initialize() {
     await loadOwnedCompanies();
   }
   updateAuthView();
+  renderPasswordChecks();
   renderAll();
   if (initialCompanySlug) {
     const company = companies.find((item) => item.id === initialCompanySlug);

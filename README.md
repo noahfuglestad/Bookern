@@ -20,3 +20,13 @@ Bedrifter kan bygge inn Bookern på egen nettside med:
 ```html
 <script src="https://din-vercel-url.vercel.app/embed.js" data-bookern-business="nord-frisor"></script>
 ```
+
+Du kan styre høyden på widgeten slik:
+
+```html
+<script
+  src="https://din-vercel-url.vercel.app/embed.js"
+  data-bookern-business="nord-frisor"
+  data-bookern-height="820"
+></script>
+```

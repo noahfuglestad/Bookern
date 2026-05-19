@@ -309,7 +309,7 @@ function getAuthErrorMessage(error, mode) {
   }
 
   if (normalized.includes("weak_password") || normalized.includes("password")) {
-    return "Passordet er ikke godkjent. Bruk minst 6 tegn. Hvis du har satt strengere krav i Supabase, må passordet følge de kravene.";
+    return "Passordet er ikke godkjent. Bruk minst 6 tegn og minst 1 spesialtegn, for eksempel !, ? eller #.";
   }
 
   if (normalized.includes("email") || normalized.includes("invalid")) {
@@ -637,7 +637,7 @@ function renderBusinessView() {
 }
 
 function renderEmbedPanel() {
-  const company = selectedCompany ?? companies[0];
+  const company = selectedCompany ?? ownedCompanies[0] ?? companies[0];
   if (!company) {
     embedCompanyName.textContent = "Velg eller opprett en bedrift for å lage embed-kode.";
     embedCode.value = "";
@@ -890,7 +890,7 @@ businessSetupForm.addEventListener("submit", async (event) => {
   businessSetupMessage.textContent = "Publiserer bedriften...";
   try {
     const company = await createBusinessProfile(profile, profileServices);
-    await loadCompaniesFromSupabase();
+    await loadOwnedCompanies();
     await selectCompany(company);
     businessSetupForm.reset();
     businessSetupMessage.textContent = `${company.name} er publisert. Kundene kan nå finne bedriften i søket.`;

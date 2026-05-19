@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="styles.css">
     <script src="/api/config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=5" defer></script>
+    <script src="app.js?v=6" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -17,37 +17,37 @@
       </a>
       <nav class="view-switch" aria-label="Velg visning">
         <button class="view-button is-active" type="button" data-view="home">Start</button>
-        <button class="view-button" type="button" data-view="customer">Kunde</button>
-        <button class="view-button" type="button" data-view="business">Bedrift</button>
+        <button class="view-button" type="button" data-view="customer">Widget</button>
+        <button class="view-button" type="button" data-view="business">Dashboard</button>
       </nav>
     </header>
 
     <main>
       <section class="welcome-view" data-panel="home">
         <div class="welcome-hero">
-          <p class="eyebrow">Velkommen til Bookern</p>
-          <h1>En enklere måte å finne ledig tid og holde orden på bookinger.</h1>
-          <p class="lead">Velg om du skal booke hos en bedrift, eller om du vil bruke Bookern i din egen bedrift.</p>
+          <p class="eyebrow">Bookern SaaS</p>
+          <h1>Booking på bedriftens egen nettside, drevet av Bookern.</h1>
+          <p class="lead">Bedriften beholder kunden på sin egen nettside. Bookern håndterer kalender, ledige tider, bookinger og oversikt i bakgrunnen.</p>
         </div>
 
         <div class="choice-grid">
           <button class="choice-card" type="button" data-view-target="customer">
-            <span>Kunde</span>
-            <strong>Jeg vil booke en time</strong>
-            <p>Søk opp bedriften, se ledige tider og send inn bookingen på noen få klikk.</p>
+            <span>Widget</span>
+            <strong>Se booking-widgeten</strong>
+            <p>Dette er opplevelsen kundene får inne på bedriftens egen nettside.</p>
           </button>
           <button class="choice-card" type="button" data-view-target="business">
-            <span>Bedrift</span>
-            <strong>Jeg vil bruke Bookern</strong>
-            <p>Få oversikt over kalender, kunder og kapasitet i en ryddig bedriftsvisning.</p>
+            <span>SaaS</span>
+            <strong>Start som bedrift</strong>
+            <p>Opprett bookingprofil, tjenester og embed-kode fra ett enkelt dashboard.</p>
           </button>
         </div>
       </section>
 
       <section class="intro" data-context="booking" hidden>
         <div>
-          <p class="eyebrow" id="introEyebrow">Booking for små bedrifter</p>
-          <h1 id="introTitle">La kunder finne ledig tid, og gi bedriften full oversikt.</h1>
+          <p class="eyebrow" id="introEyebrow">Widget-demo</p>
+          <h1 id="introTitle">En bookingopplevelse som kan ligge direkte på bedriftens nettside.</h1>
         </div>
         <div class="intro-panel" aria-label="Status">
           <span id="openSlotsCount">0</span>
@@ -57,8 +57,8 @@
 
       <section class="customer-search" data-panel="customer" hidden>
         <div class="section-heading">
-          <p class="eyebrow">Finn bedrift</p>
-          <h2>Hvem vil du booke hos?</h2>
+          <p class="eyebrow">Widget-demo</p>
+          <h2>Velg hvilken bedrift widgeten skal vise</h2>
         </div>
         <label class="search-label">
           Søk etter navn, sted eller kategori
@@ -116,14 +116,14 @@
       <section class="business-view" data-panel="business" hidden>
         <div class="business-start">
           <div>
-            <p class="eyebrow">Start med Bookern</p>
-            <h1>Gi kundene dine en enklere vei inn i kalenderen.</h1>
-            <p class="lead">Denne demoen viser hvordan en liten bedrift kan presentere tjenester, ta imot bookinger og holde oversikten samlet.</p>
+            <p class="eyebrow">Bookern Dashboard</p>
+            <h1>Styr booking-widgeten uten å flytte kunden bort fra nettsiden din.</h1>
+            <p class="lead">Legg inn bedrift og tjenester, kopier embed-koden og la Bookern ta seg av bookingmotoren bak kulissene.</p>
           </div>
           <div class="setup-card">
-            <strong>Klar for neste steg</strong>
-            <p>Legg inn bedrift, tjenester og åpningstider. Etterpå kan kundene finne deg i søket.</p>
-            <button class="primary-button" type="button" data-view-target="customer">Se kundesiden</button>
+            <strong>SaaS-modellen</strong>
+            <p>Bedriften eier kundeflaten. Bookern leverer widget, kalender og administrasjon.</p>
+            <button class="primary-button" type="button" data-view-target="customer">Se widget</button>
           </div>
         </div>
 
@@ -156,6 +156,16 @@
             <button class="primary-button" type="submit">Publiser bedrift</button>
           </form>
           <p class="form-message" id="businessSetupMessage" role="status"></p>
+        </section>
+
+        <section class="embed-panel">
+          <div class="section-heading">
+            <p class="eyebrow">Embed-widget</p>
+            <h2>Kode for bedriftens nettside</h2>
+          </div>
+          <p class="embed-copy" id="embedCompanyName">Velg eller opprett en bedrift for å lage embed-kode.</p>
+          <textarea id="embedCode" rows="4" readonly></textarea>
+          <button class="secondary-button" id="copyEmbedCode" type="button">Kopier embed-kode</button>
         </section>
 
         <div class="business-header">

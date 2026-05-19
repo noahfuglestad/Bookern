@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="styles.css">
     <script src="/api/bookern-settings.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=14" defer></script>
+    <script src="app.js?v=15" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -17,9 +17,8 @@
       </a>
       <nav class="view-switch" aria-label="Velg visning">
         <button class="view-button is-active" type="button" data-view="home">Start</button>
-        <button class="view-button" type="button" data-view="overview">Oversikt</button>
-        <button class="view-button" type="button" data-view="business">Bedrift</button>
-        <button class="view-button" type="button" data-view="customer">Widget</button>
+        <button class="view-button" type="button" data-view="business">Bli medlem</button>
+        <button class="view-button" type="button" data-view="overview">Medlemsside</button>
       </nav>
     </header>
 
@@ -30,8 +29,8 @@
           <h1>La kunder booke direkte på nettsiden din.</h1>
           <p class="lead">Bookern gir små bedrifter en ferdig booking-widget, kalender og dashboard uten at kundene sendes bort fra bedriftens egen nettside.</p>
           <div class="hero-actions">
-            <button class="primary-button" type="button" data-view-target="business">Start med bedriftskonto</button>
-            <button class="secondary-button" type="button" data-view-target="customer">Se widget-demo</button>
+            <button class="primary-button" type="button" data-view-target="business">Bli medlem</button>
+            <button class="secondary-button" type="button" data-demo-focus>Se demoen</button>
           </div>
           <div class="proof-row" aria-label="Hva Bookern leverer">
             <span>Embed-kode</span>
@@ -89,6 +88,60 @@
             </article>
           </div>
         </div>
+
+        <section class="demo-section" id="widgetDemo">
+          <div class="section-heading">
+            <p class="eyebrow">Demo av widgeten</p>
+            <h2>Slik vil kunden booke på bedriftens egen nettside.</h2>
+          </div>
+          <div class="demo-layout">
+            <div class="demo-browser">
+              <div class="mock-site-bar">
+                <span>Nord Studio</span>
+                <span>Om oss</span>
+                <span>Book time</span>
+              </div>
+              <div class="mock-site-hero">
+                <p>Bedriftens nettside</p>
+                <strong>Kunden blir værende hos bedriften</strong>
+              </div>
+              <div class="mock-widget">
+                <div class="mock-widget-head">
+                  <span>Bookern-widget</span>
+                  <strong>Velg tjeneste og ledig tid</strong>
+                </div>
+                <div class="mock-service-row">
+                  <span>Konsultasjon</span>
+                  <strong>30 min</strong>
+                </div>
+                <div class="mock-calendar">
+                  <span>09:00</span>
+                  <span class="is-open">10:00</span>
+                  <span>12:30</span>
+                  <span class="is-open">14:30</span>
+                </div>
+              </div>
+            </div>
+            <div class="demo-copy">
+              <strong>Bookern ligger bak, men kunden opplever bedriftens egen side.</strong>
+              <p>Bedriften får en kode som legges inn på nettsiden. Kundene booker der, og alle bestillinger havner automatisk i medlemssiden til bedriften.</p>
+              <button class="primary-button" type="button" data-view-target="business">Bli medlem</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="pricing-section">
+          <div>
+            <p class="eyebrow">Medlemskap</p>
+            <h2>Én enkel pris for booking-widget og dashboard.</h2>
+          </div>
+          <article class="price-card">
+            <span>Bookern Start</span>
+            <strong>299 kr / mnd</strong>
+            <p>Widget, kalender, bestillinger, tilgjengelige dager og tider.</p>
+            <button class="primary-button" type="button" data-view-target="business">Bli medlem</button>
+          </article>
+        </section>
 
         <div class="process-section">
           <div>
@@ -283,16 +336,49 @@
       <section class="business-view" data-panel="business" hidden>
         <div class="business-start">
           <div>
-            <p class="eyebrow">Bookern Dashboard</p>
-            <h1>Styr booking-widgeten uten å flytte kunden bort fra nettsiden din.</h1>
-            <p class="lead">Lag en bedriftskonto, sett opp widgeten og styr kalenderen fra én ryddig oversikt.</p>
+            <p class="eyebrow">Bli medlem</p>
+            <h1>Opprett konto, velg medlemskap og åpne dashboardet.</h1>
+            <p class="lead">Når bedriften er medlem får den tilgang til en lukket oversikt med kalender, widget-kode og alle bestillinger.</p>
           </div>
           <div class="setup-card">
-            <strong>SaaS-modellen</strong>
-            <p>Bedriften eier kundeflaten. Bookern leverer widget, kalender og administrasjon.</p>
-            <button class="primary-button" type="button" data-view-target="overview">Se oversikt</button>
+            <strong>Medlemssiden er privat</strong>
+            <p>Kun innloggede bedrifter kommer inn til oversikten. Kunder bruker widgeten på bedriftens nettside.</p>
+            <button class="primary-button" type="button" data-view-target="overview">Gå til medlemsside</button>
           </div>
         </div>
+
+        <section class="membership-steps">
+          <article>
+            <span>1</span>
+            <strong>Lag bruker</strong>
+            <p>Opprett eller logg inn med bedriftskonto.</p>
+          </article>
+          <article>
+            <span>2</span>
+            <strong>Betal medlemskap</strong>
+            <p>Betaling kobles til Stripe eller Vipps i neste steg.</p>
+          </article>
+          <article>
+            <span>3</span>
+            <strong>Åpne dashboard</strong>
+            <p>Legg inn bedriften og hent widget-koden.</p>
+          </article>
+        </section>
+
+        <section class="payment-panel">
+          <div class="section-heading">
+            <p class="eyebrow">Betaling</p>
+            <h2>Bookern Start</h2>
+          </div>
+          <div class="payment-row">
+            <div>
+              <strong>299 kr / mnd</strong>
+              <p>Betalingskoblingen er klargjort i flyten. Neste steg er å koble ekte betaling med Stripe eller Vipps.</p>
+            </div>
+            <button class="secondary-button" type="button" data-payment-button>Marker som betalt i test</button>
+          </div>
+          <p class="form-message" id="paymentMessage" role="status"></p>
+        </section>
 
         <section class="auth-panel">
           <div class="section-heading">

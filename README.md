@@ -1,12 +1,19 @@
 # Bookern
 
-En enkel booking-prototype for små bedrifter.
+Bookern er en SaaS for små bedrifter som vil ha booking direkte på sin egen nettside.
 
-Kunder kan bla i kalenderen, velge en ledig time og booke. Bedriften får en ryddig oversikt over dagens og ukens bookinger.
+Kunden blir værende på bedriftens nettside, mens Bookern leverer booking-widget, kalenderlogikk, lagring og oversikt i bakgrunnen.
 
 Klar for deploy på Vercel som en statisk nettside.
 
-Bedrifter kan nå legge inn en enkel bookingprofil direkte fra bedriftsfanen. Profilen publiseres i Supabase og blir søkbar for kunder.
+## Produktretning
+
+- Bookern er kontrollpanelet for bedriften.
+- `embed.js` er booking-widgeten bedriften legger inn på egen nettside.
+- Supabase lagrer bedrifter, tjenester og bookinger.
+- Neste store steg er innlogging for bedrifter, slik at oppsettet blir privat per kunde.
+
+Bedrifter kan legge inn en enkel bookingprofil direkte fra dashboardet. Profilen publiseres i Supabase og får en embed-kode som kan limes inn på bedriftens egen nettside.
 
 ## Supabase
 
@@ -20,7 +27,7 @@ Legg disse miljøvariablene inn i Vercel:
 Bedrifter kan bygge inn Bookern på egen nettside med:
 
 ```html
-<script src="https://din-vercel-url.vercel.app/embed.js" data-bookern-business="nord-frisor"></script>
+<script src="https://din-vercel-url.vercel.app/embed.js" data-bookern-business="nord-frisor" data-bookern-height="820"></script>
 ```
 
 Du kan styre høyden på widgeten slik:

@@ -88,12 +88,22 @@ const businessSetupMessage = document.querySelector("#businessSetupMessage");
 const embedCompanyName = document.querySelector("#embedCompanyName");
 const embedCode = document.querySelector("#embedCode");
 const copyEmbedCode = document.querySelector("#copyEmbedCode");
+const authForm = document.querySelector("#authForm");
+const authEmail = document.querySelector("#authEmail");
+const authPassword = document.querySelector("#authPassword");
+const authMessage = document.querySelector("#authMessage");
+const signupButton = document.querySelector("#signupButton");
+const loginButton = document.querySelector("#loginButton");
+const logoutButton = document.querySelector("#logoutButton");
+const authRequiredSections = document.querySelectorAll("[data-auth-required]");
 
 let selectedService = services[0];
 let selectedCompany = null;
 let selectedSlot = null;
 let weekOffset = 0;
 let bookings = usingSupabase ? [] : loadDemoBookings();
+let currentUser = null;
+let ownedCompanies = [];
 const localBusinessServices = {};
 
 if (isEmbed) {
@@ -252,6 +262,32 @@ function normalizeBooking(booking) {
   };
 }
 
+function updateAuthView() {
+  const isAuthed = Boolean(currentUser);
+  authRequiredSections.forEach((section) => {
+    section.hidden = usingSupabase && !isAuthed;
+  });
+
+  if (!usingSupabase) {
+    authForm.classList.add("is-authenticated");
+    authMessage.textContent = "Lokal demo uten innlogging. Koble Supabase for privat bedriftsdashboard.";
+    logoutButton.hidden = true;
+    return;
+  }
+
+  authForm.classList.toggle("is-authenticated", isAuthed);
+  logoutButton.hidden = !isAuthed;
+  loginButton.hidden = isAuthed;
+  signupButton.hidden = isAuthed;
+  authEmail.required = !isAuthed;
+  authPassword.required = !isAuthed;
+  authEmail.disabled = isAuthed;
+  authPassword.disabled = isAuthed;
+  authMessage.textContent = isAuthed
+    ? `Logget inn som ${currentUser.email}.`
+    : "Logg inn eller opprett konto for å åpne bedriftsdashboardet.";
+}
+
 async function loadCompaniesFromSupabase() {
   if (!usingSupabase) return;
   const { data, error } = await supabaseClient
@@ -266,6 +302,32 @@ async function loadCompaniesFromSupabase() {
   }
 
   companies = data.map(normalizeCompany);
+}
+
+async function loadOwnedCompanies() {
+  ownedCompanies = [];
+  if (!usingSupabase || !currentUser) return;
+
+  const { data, error } = await supabaseClient
+    .from("companies")
+    .select("id, slug, name, category, city, description")
+    .eq("owner_id", currentUser.id)
+    .order("name");
+
+  if (error) {
+    console.warn("Kunne ikke hente dine bedrifter fra Supabase", error);
+    return;
+  }
+
+  ownedCompanies = data.map(normalizeCompany);
+  companies = [
+    ...companies.filter((company) => !ownedCompanies.some((owned) => owned.id === company.id)),
+    ...ownedCompanies,
+  ].sort((a, b) => a.name.localeCompare(b.name));
+
+  if (!isEmbed && !initialCompanySlug && !selectedCompany && ownedCompanies.length) {
+    await selectCompany(ownedCompanies[0]);
+  }
 }
 
 async function loadCompanyServices(company) {
@@ -293,6 +355,25 @@ async function loadCompanyServices(company) {
 
 async function loadCompanyBookings(company) {
   if (!usingSupabase || !company?.dbId) return;
+
+  const canReadDetails = currentUser && ownedCompanies.some((ownedCompany) => ownedCompany.dbId === company.dbId);
+  if (canReadDetails) {
+    const { data, error } = await supabaseClient
+      .from("appointments")
+      .select("id, booking_date, start_time, customer_name, customer_contact, note, service_id, company_id, services(name, duration_minutes)")
+      .eq("company_id", company.dbId)
+      .in("status", ["booked", "confirmed"])
+      .order("booking_date")
+      .order("start_time");
+
+    if (error) {
+      console.warn("Kunne ikke hente bookinger fra Supabase", error);
+      return;
+    }
+
+    bookings = data.map((booking) => normalizeBooking({ ...booking, companyId: company.id, companyName: company.name }));
+    return;
+  }
 
   const { data, error } = await supabaseClient.rpc("get_booked_slots", {
     target_company_id: company.dbId,
@@ -355,9 +436,14 @@ async function createBusinessProfile(profile, profileServices) {
     return company;
   }
 
+  if (!currentUser) {
+    throw new Error("Du må være logget inn for å opprette en bedrift.");
+  }
+
   const { data: companyData, error: companyError } = await supabaseClient
     .from("companies")
     .insert({
+      owner_id: currentUser.id,
       slug,
       name: profile.name,
       category: profile.category,
@@ -387,6 +473,7 @@ async function createBusinessProfile(profile, profileServices) {
 
   const company = normalizeCompany(companyData);
   companies = [...companies.filter((item) => item.id !== company.id), company].sort((a, b) => a.name.localeCompare(b.name));
+  ownedCompanies = [...ownedCompanies.filter((item) => item.id !== company.id), company].sort((a, b) => a.name.localeCompare(b.name));
   return company;
 }
 
@@ -473,7 +560,8 @@ function renderSelectedSlot() {
 function renderBusinessView() {
   const todayKey = toDateKey(new Date());
   const visibleDayKeys = getVisibleDays().map(toDateKey);
-  const companyId = companies[0].id;
+  const companyId = selectedCompany?.id ?? ownedCompanies[0]?.id ?? companies[0]?.id;
+  if (!companyId) return;
   const visibleBookings = bookings
     .filter((booking) => (booking.companyId ?? companyId) === companyId && visibleDayKeys.includes(booking.date))
     .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
@@ -539,9 +627,9 @@ function renderAll() {
 
 function updateBookingCopy() {
   if (!selectedCompany) {
-    introEyebrow.textContent = "Kunde";
-    introTitle.textContent = "Søk opp bedriften du vil booke hos.";
-    serviceTitle.textContent = "Velg en bedrift først";
+    introEyebrow.textContent = "Widget-demo";
+    introTitle.textContent = "Velg en bedrift for å forhåndsvise booking-widgeten.";
+    serviceTitle.textContent = "Velg bedrift for widgeten";
     bookingTitle.textContent = "Book valgt time";
     bookingShell.hidden = true;
     return;
@@ -603,6 +691,72 @@ companyResults.addEventListener("click", async (event) => {
   await selectCompany(company);
 });
 
+authForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!usingSupabase) {
+    authMessage.textContent = "Supabase er ikke koblet til ennå.";
+    return;
+  }
+
+  authMessage.textContent = "Logger inn...";
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email: authEmail.value.trim(),
+    password: authPassword.value,
+  });
+
+  if (error) {
+    authMessage.textContent = "Kunne ikke logge inn. Sjekk e-post og passord.";
+    return;
+  }
+
+  currentUser = data.user;
+  await loadOwnedCompanies();
+  updateAuthView();
+  renderAll();
+});
+
+signupButton.addEventListener("click", async () => {
+  if (!usingSupabase) {
+    authMessage.textContent = "Supabase er ikke koblet til ennå.";
+    return;
+  }
+
+  if (!authEmail.value.trim() || !authPassword.value) {
+    authMessage.textContent = "Skriv e-post og passord først.";
+    return;
+  }
+
+  authMessage.textContent = "Oppretter konto...";
+  const { data, error } = await supabaseClient.auth.signUp({
+    email: authEmail.value.trim(),
+    password: authPassword.value,
+  });
+
+  if (error) {
+    authMessage.textContent = "Kunne ikke opprette konto. Prøv en annen e-post eller et lengre passord.";
+    return;
+  }
+
+  currentUser = data.user ?? currentUser;
+  await loadOwnedCompanies();
+  updateAuthView();
+  renderAll();
+  authMessage.textContent = currentUser
+    ? `Kontoen er klar. Logget inn som ${currentUser.email}.`
+    : "Kontoen er opprettet. Sjekk e-posten din for bekreftelse før du logger inn.";
+});
+
+logoutButton.addEventListener("click", async () => {
+  if (!usingSupabase) return;
+  await supabaseClient.auth.signOut();
+  currentUser = null;
+  ownedCompanies = [];
+  selectedCompany = null;
+  bookings = [];
+  updateAuthView();
+  renderAll();
+});
+
 document.querySelector("#prevWeek").addEventListener("click", () => {
   weekOffset -= 1;
   selectedSlot = null;
@@ -651,6 +805,11 @@ bookingForm.addEventListener("submit", async (event) => {
 
 businessSetupForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (usingSupabase && !currentUser) {
+    businessSetupMessage.textContent = "Logg inn før du oppretter en bedrift.";
+    return;
+  }
+
   const formData = new FormData(businessSetupForm);
   const profile = {
     name: formData.get("businessName").trim(),
@@ -713,6 +872,19 @@ document.querySelector("#resetDemo").addEventListener("click", () => {
 
 async function initialize() {
   await loadCompaniesFromSupabase();
+  if (usingSupabase) {
+    const { data } = await supabaseClient.auth.getSession();
+    currentUser = data.session?.user ?? null;
+    supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+      currentUser = session?.user ?? null;
+      ownedCompanies = [];
+      await loadOwnedCompanies();
+      updateAuthView();
+      renderAll();
+    });
+    await loadOwnedCompanies();
+  }
+  updateAuthView();
   renderAll();
   if (initialCompanySlug) {
     const company = companies.find((item) => item.id === initialCompanySlug);

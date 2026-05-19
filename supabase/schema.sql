@@ -9,8 +9,12 @@ create table if not exists public.companies (
   city text,
   description text,
   is_published boolean not null default true,
+  available_times text[] not null default array['09:00', '10:00', '11:00', '12:30', '13:30', '14:30', '15:30'],
   created_at timestamptz not null default now()
 );
+
+alter table public.companies
+  add column if not exists available_times text[] not null default array['09:00', '10:00', '11:00', '12:30', '13:30', '14:30', '15:30'];
 
 create table if not exists public.services (
   id uuid primary key default gen_random_uuid(),
@@ -143,12 +147,14 @@ as $$
 $$;
 
 drop function if exists public.create_bookern_business(text, text, text, text, text, jsonb);
+drop function if exists public.create_bookern_business(text, text, text, text, text, text[], jsonb);
 create function public.create_bookern_business(
   business_slug text,
   business_name text,
   business_category text,
   business_city text,
   business_description text,
+  business_available_times text[],
   business_services jsonb
 )
 returns table (
@@ -157,7 +163,8 @@ returns table (
   name text,
   category text,
   city text,
-  description text
+  description text,
+  available_times text[]
 )
 language plpgsql
 security definer
@@ -186,6 +193,7 @@ begin
     category,
     city,
     description,
+    available_times,
     is_published
   )
   values (
@@ -195,6 +203,7 @@ begin
     business_category,
     business_city,
     business_description,
+    coalesce(nullif(business_available_times, array[]::text[]), array['09:00', '10:00', '11:00', '12:30', '13:30', '14:30', '15:30']),
     true
   )
   returning companies.id into new_company_id;
@@ -229,14 +238,15 @@ begin
     companies.name,
     companies.category,
     companies.city,
-    companies.description
+    companies.description,
+    companies.available_times
   from public.companies
   where companies.id = new_company_id;
 end;
 $$;
 
-revoke all on function public.create_bookern_business(text, text, text, text, text, jsonb) from public;
-grant execute on function public.create_bookern_business(text, text, text, text, text, jsonb) to authenticated;
+revoke all on function public.create_bookern_business(text, text, text, text, text, text[], jsonb) from public;
+grant execute on function public.create_bookern_business(text, text, text, text, text, text[], jsonb) to authenticated;
 
 insert into public.companies (slug, name, category, city, description)
 values

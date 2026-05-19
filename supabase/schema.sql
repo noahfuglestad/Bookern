@@ -142,6 +142,102 @@ as $$
     and companies.is_published = true;
 $$;
 
+drop function if exists public.create_bookern_business(text, text, text, text, text, jsonb);
+create function public.create_bookern_business(
+  business_slug text,
+  business_name text,
+  business_category text,
+  business_city text,
+  business_description text,
+  business_services jsonb
+)
+returns table (
+  id uuid,
+  slug text,
+  name text,
+  category text,
+  city text,
+  description text
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  owner uuid := auth.uid();
+  new_company_id uuid;
+begin
+  if owner is null then
+    raise exception 'Du må være logget inn for å opprette en bedrift.';
+  end if;
+
+  if business_slug is null or length(trim(business_slug)) = 0 then
+    raise exception 'Bedriften trenger et navn.';
+  end if;
+
+  if business_services is null or jsonb_array_length(business_services) = 0 then
+    raise exception 'Legg inn minst én tjeneste.';
+  end if;
+
+  insert into public.companies (
+    owner_id,
+    slug,
+    name,
+    category,
+    city,
+    description,
+    is_published
+  )
+  values (
+    owner,
+    business_slug,
+    business_name,
+    business_category,
+    business_city,
+    business_description,
+    true
+  )
+  returning companies.id into new_company_id;
+
+  insert into public.services (
+    company_id,
+    name,
+    duration_minutes,
+    price_text,
+    sort_order,
+    is_active
+  )
+  select
+    new_company_id,
+    service.name,
+    coalesce(service.duration_minutes, 30),
+    service.price_text,
+    coalesce(service.sort_order, 0),
+    true
+  from jsonb_to_recordset(business_services) as service(
+    name text,
+    duration_minutes integer,
+    price_text text,
+    sort_order integer
+  )
+  where service.name is not null and length(trim(service.name)) > 0;
+
+  return query
+  select
+    companies.id,
+    companies.slug,
+    companies.name,
+    companies.category,
+    companies.city,
+    companies.description
+  from public.companies
+  where companies.id = new_company_id;
+end;
+$$;
+
+revoke all on function public.create_bookern_business(text, text, text, text, text, jsonb) from public;
+grant execute on function public.create_bookern_business(text, text, text, text, text, jsonb) to authenticated;
+
 insert into public.companies (slug, name, category, city, description)
 values
   ('nord-frisor', 'Nord Frisør', 'Frisør', 'Oslo sentrum', 'Klipp, styling og raske konsultasjoner for hverdagen.'),

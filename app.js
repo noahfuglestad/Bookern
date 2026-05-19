@@ -848,7 +848,10 @@ async function initialize() {
   passwordChecks();
   renderAll();
   const startupView = ["business", "overview", "customer"].includes(initialView) ? initialView : "home";
-  setView(isEmbed ? "customer" : startupView);
+  const authedStartupView = currentUser && startupView === "home"
+    ? ownedCompanies.length ? "overview" : "business"
+    : startupView;
+  setView(isEmbed ? "customer" : authedStartupView);
 }
 
 initialize();

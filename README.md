@@ -6,9 +6,11 @@ Kunder kan bla i kalenderen, velge en ledig time og booke. Bedriften får en ryd
 
 Klar for deploy på Vercel som en statisk nettside.
 
+Bedrifter kan nå legge inn en enkel bookingprofil direkte fra bedriftsfanen. Profilen publiseres i Supabase og blir søkbar for kunder.
+
 ## Supabase
 
-Kjør SQL-en i `supabase/schema.sql` i Supabase SQL Editor.
+Kjør SQL-en i `supabase/schema.sql` i Supabase SQL Editor. Kjør den på nytt etter oppdateringer, slik at nye policies og funksjoner blir lagt inn.
 
 Legg disse miljøvariablene inn i Vercel:
 

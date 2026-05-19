@@ -361,6 +361,7 @@ main {
 .scheduler,
 .booking-panel,
 .business-view,
+.business-setup,
 .business-layout section {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -371,6 +372,7 @@ main {
 .sidebar,
 .booking-panel,
 .business-view,
+.business-setup,
 .business-layout section {
   padding: 20px;
 }
@@ -576,6 +578,23 @@ textarea:focus {
   padding: 22px;
 }
 
+.business-setup {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 22px;
+  background: #fff;
+}
+
+.setup-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.setup-form label:nth-of-type(4),
+.setup-form label:nth-of-type(5),
+.setup-form .primary-button {
+  grid-column: 1 / -1;
+}
+
 .business-header {
   display: flex;
   align-items: center;
@@ -604,7 +623,7 @@ textarea:focus {
 }
 
 .booking-list,
-.timeline {
+timeline {
   display: grid;
   gap: 10px;
   margin-top: 18px;
@@ -650,7 +669,8 @@ textarea:focus {
   .app-shell,
   .business-layout,
   .welcome-view,
-  .business-start {
+  .business-start,
+  .setup-form {
     grid-template-columns: 1fr;
   }
 

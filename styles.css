@@ -847,6 +847,41 @@ textarea:focus {
   margin: 22px 0;
 }
 
+.dashboard-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.dashboard-action {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  text-align: left;
+  box-shadow: var(--shadow);
+}
+
+.dashboard-action strong {
+  font-size: 1rem;
+}
+
+.dashboard-action span {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.availability-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .availability-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -890,7 +925,7 @@ textarea:focus {
 
 .business-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.75fr) minmax(280px, 0.75fr);
   gap: 18px;
 }
 
@@ -905,10 +940,13 @@ textarea:focus {
 .timeline-item {
   display: grid;
   gap: 5px;
+  width: 100%;
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
+  color: var(--ink);
+  text-align: left;
 }
 
 .booking-item strong,
@@ -928,6 +966,44 @@ textarea:focus {
   font-weight: 700;
 }
 
+.booking-item.is-active,
+.timeline-item.is-active {
+  border-color: var(--ink);
+  background: var(--accent-soft);
+}
+
+.booking-detail {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.detail-row,
+.detail-note {
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.detail-row span,
+.detail-note span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.detail-row strong,
+.detail-note p {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .empty-state {
   padding: 18px;
   border: 1px dashed var(--line);
@@ -944,6 +1020,8 @@ textarea:focus {
   .business-start,
   .feature-grid,
   .process-section,
+  .dashboard-actions,
+  .availability-days,
   .availability-grid,
   .auth-form,
   .setup-form {

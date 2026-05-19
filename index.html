@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="styles.css">
     <script src="/api/bookern-settings.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=9" defer></script>
+    <script src="app.js?v=10" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -25,22 +25,86 @@
     <main>
       <section class="welcome-view" data-panel="home">
         <div class="welcome-hero">
-          <p class="eyebrow">Bookern SaaS</p>
-          <h1>Booking på bedriftens egen nettside, drevet av Bookern.</h1>
-          <p class="lead">Bedriften beholder kunden på sin egen nettside. Bookern håndterer kalender, ledige tider, bookinger og oversikt i bakgrunnen.</p>
+          <p class="eyebrow">Booking-widget for bedrifter</p>
+          <h1>La kunder booke direkte på nettsiden din.</h1>
+          <p class="lead">Bookern gir små bedrifter en ferdig booking-widget, kalender og dashboard uten at kundene sendes bort fra bedriftens egen nettside.</p>
+          <div class="hero-actions">
+            <button class="primary-button" type="button" data-view-target="business">Start med Bookern</button>
+            <button class="secondary-button" type="button" data-view-target="customer">Se widget-demo</button>
+          </div>
+          <div class="proof-row" aria-label="Hva Bookern leverer">
+            <span>Embed-kode</span>
+            <span>Ledige tider</span>
+            <span>Bedriftsdashboard</span>
+          </div>
         </div>
 
-        <div class="choice-grid">
-          <button class="choice-card" type="button" data-view-target="customer">
-            <span>Widget</span>
-            <strong>Se booking-widgeten</strong>
-            <p>Dette er opplevelsen kundene får inne på bedriftens egen nettside.</p>
-          </button>
-          <button class="choice-card" type="button" data-view-target="business">
-            <span>SaaS</span>
-            <strong>Start som bedrift</strong>
-            <p>Opprett bookingprofil, tjenester og embed-kode fra ett enkelt dashboard.</p>
-          </button>
+        <div class="website-preview" aria-label="Eksempel på Bookern-widget inne på en nettside">
+          <div class="mock-site-bar">
+            <span>Nord Studio</span>
+            <span>Tjenester</span>
+            <span>Kontakt</span>
+          </div>
+          <div class="mock-site-hero">
+            <p>Frisør i Oslo</p>
+            <strong>Bestill time uten å forlate nettsiden</strong>
+          </div>
+          <div class="mock-widget">
+            <div class="mock-widget-head">
+              <span>Book time</span>
+              <strong>Velg en ledig tid</strong>
+            </div>
+            <div class="mock-service-row">
+              <span>Klipp</span>
+              <strong>30 min</strong>
+            </div>
+            <div class="mock-calendar">
+              <span>09:00</span>
+              <span class="is-open">10:00</span>
+              <span>11:00</span>
+              <span class="is-open">13:30</span>
+            </div>
+            <button class="primary-button" type="button" data-view-target="customer">Forhåndsvis widget</button>
+          </div>
+        </div>
+
+        <div class="sales-section">
+          <div class="section-heading">
+            <p class="eyebrow">Hva du selger videre til bedrifter</p>
+            <h2>Et bookingsystem som føles som en del av bedriftens egen nettside.</h2>
+          </div>
+          <div class="feature-grid">
+            <article>
+              <strong>Widget på egen nettside</strong>
+              <p>Bedriften limer inn én enkel kode, og kundene booker uten å bli sendt til en ekstern portal.</p>
+            </article>
+            <article>
+              <strong>Ryddig oversikt</strong>
+              <p>Bookinger, kapasitet og dagsplan samles i Bookern-dashboardet for bedriften.</p>
+            </article>
+            <article>
+              <strong>Klar for små bedrifter</strong>
+              <p>Passer for frisører, behandlere, klinikker, konsulenter og andre som selger tid.</p>
+            </article>
+          </div>
+        </div>
+
+        <div class="process-section">
+          <div>
+            <span>1</span>
+            <strong>Bedriften oppretter profil</strong>
+            <p>Legger inn navn, tjenester og kort beskrivelse.</p>
+          </div>
+          <div>
+            <span>2</span>
+            <strong>Bookern lager widget-kode</strong>
+            <p>Koden legges inn på bedriftens eksisterende nettside.</p>
+          </div>
+          <div>
+            <span>3</span>
+            <strong>Kunden booker der de allerede er</strong>
+            <p>Bedriften får bookingen i dashboardet.</p>
+          </div>
         </div>
       </section>
 

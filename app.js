@@ -289,6 +289,40 @@ function updateAuthView() {
     : "Logg inn eller opprett konto for å åpne bedriftsdashboardet.";
 }
 
+function getAuthErrorMessage(error, mode) {
+  const code = error?.code ?? "";
+  const message = error?.message ?? "";
+  const normalized = `${code} ${message}`.toLowerCase();
+
+  if (normalized.includes("invalid login") || normalized.includes("invalid_credentials")) {
+    return "Feil e-post eller passord. Sjekk at kontoen er opprettet, og prøv å skrive passordet på nytt.";
+  }
+
+  if (normalized.includes("email not confirmed")) {
+    return "E-posten er ikke bekreftet ennå. Sjekk innboksen eller slå av e-postbekreftelse i Supabase mens du tester.";
+  }
+
+  if (normalized.includes("already") || normalized.includes("registered") || normalized.includes("exists")) {
+    return "Denne e-posten ser allerede ut til å være registrert. Prøv å logge inn i stedet.";
+  }
+
+  if (normalized.includes("weak_password") || normalized.includes("password")) {
+    return "Passordet er ikke godkjent. Bruk minst 6 tegn. Hvis du har satt strengere krav i Supabase, må passordet følge de kravene.";
+  }
+
+  if (normalized.includes("email") || normalized.includes("invalid")) {
+    return "E-postadressen ser ikke gyldig ut. Bruk en vanlig adresse, for eksempel navn@bedrift.no.";
+  }
+
+  if (normalized.includes("rate") || normalized.includes("too many")) {
+    return "Det er gjort for mange forsøk på kort tid. Vent litt og prøv igjen.";
+  }
+
+  return mode === "login"
+    ? `Kunne ikke logge inn: ${message || "ukjent feil"}. Prøv igjen, eller opprett konto hvis du ikke har en.`
+    : `Kunne ikke opprette konto: ${message || "ukjent feil"}. Prøv en gyldig e-post og et passord på minst 6 tegn.`;
+}
+
 async function loadCompaniesFromSupabase() {
   if (!usingSupabase) return;
   const { data, error } = await supabaseClient
@@ -706,7 +740,7 @@ authForm.addEventListener("submit", async (event) => {
   });
 
   if (error) {
-    authMessage.textContent = "Kunne ikke logge inn. Sjekk e-post og passord.";
+    authMessage.textContent = getAuthErrorMessage(error, "login");
     return;
   }
 
@@ -737,7 +771,7 @@ signupButton.addEventListener("click", async () => {
   });
 
   if (error) {
-    authMessage.textContent = "Kunne ikke opprette konto. Prøv en annen e-post eller et lengre passord.";
+    authMessage.textContent = getAuthErrorMessage(error, "signup");
     return;
   }
 

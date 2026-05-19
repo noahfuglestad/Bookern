@@ -84,8 +84,8 @@ button {
 
 .view-switch {
   display: inline-grid;
-  grid-template-columns: repeat(3, 1fr);
-  min-width: 320px;
+  grid-template-columns: repeat(4, 1fr);
+  min-width: 430px;
   padding: 4px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -709,6 +709,7 @@ label {
 }
 
 input,
+select,
 textarea {
   width: 100%;
   border: 1px solid var(--line);
@@ -720,6 +721,7 @@ textarea {
 }
 
 input:focus,
+select:focus,
 textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 4px rgba(17, 17, 17, 0.12);
@@ -756,12 +758,27 @@ textarea:focus {
   padding: 22px;
 }
 
+.overview-view {
+  display: grid;
+  gap: 22px;
+}
+
 .auth-panel,
-.business-setup {
+.business-setup,
+.overview-controls,
+.availability-panel {
   display: grid;
   gap: 18px;
   margin-bottom: 22px;
   background: #fff;
+}
+
+.overview-controls,
+.availability-panel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 20px;
 }
 
 .auth-form {
@@ -825,9 +842,43 @@ textarea:focus {
 
 .stats-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 14px;
   margin: 22px 0;
+}
+
+.availability-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.time-toggle {
+  position: relative;
+  display: block;
+}
+
+.time-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.time-toggle span {
+  display: grid;
+  min-height: 44px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--muted);
+  font-weight: 850;
+}
+
+.time-toggle input:checked + span {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
 }
 
 .stats-row article {
@@ -893,6 +944,7 @@ textarea:focus {
   .business-start,
   .feature-grid,
   .process-section,
+  .availability-grid,
   .auth-form,
   .setup-form {
     grid-template-columns: 1fr;

@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="styles.css">
     <script src="/api/config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=4" defer></script>
+    <script src="app.js?v=5" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -126,6 +126,37 @@
             <button class="primary-button" type="button" data-view-target="customer">Se kundesiden</button>
           </div>
         </div>
+
+        <section class="business-setup">
+          <div class="section-heading">
+            <p class="eyebrow">Legg inn bedrift</p>
+            <h2>Start med en enkel bookingprofil</h2>
+          </div>
+          <form id="businessSetupForm" class="setup-form">
+            <label>
+              Bedriftsnavn
+              <input id="setupBusinessName" name="businessName" placeholder="For eksempel Nord Frisør" required>
+            </label>
+            <label>
+              Kategori
+              <input id="setupBusinessCategory" name="businessCategory" placeholder="Frisør, velvære, helse..." required>
+            </label>
+            <label>
+              Sted
+              <input id="setupBusinessCity" name="businessCity" placeholder="Oslo sentrum" required>
+            </label>
+            <label>
+              Kort beskrivelse
+              <textarea id="setupBusinessDescription" name="businessDescription" rows="3" placeholder="Hva kan kundene booke hos deg?"></textarea>
+            </label>
+            <label>
+              Tjenester
+              <textarea id="setupBusinessServices" name="businessServices" rows="4" placeholder="Klipp, 30 min, 490 kr&#10;Farge, 90 min, 1290 kr" required></textarea>
+            </label>
+            <button class="primary-button" type="submit">Publiser bedrift</button>
+          </form>
+          <p class="form-message" id="businessSetupMessage" role="status"></p>
+        </section>
 
         <div class="business-header">
           <div>

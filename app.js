@@ -34,7 +34,7 @@ const demoCompanies = [
 let services = [...demoServices];
 let companies = [...demoCompanies];
 
-const times = ["09:00", "10:00", "11:00", "12:30", "13:30", "14:30", "15:30"];
+const defaultTimes = ["09:00", "10:00", "11:00", "12:30", "13:30", "14:30", "15:30"];
 const dayNames = ["Søndag", "Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag"];
 const monthNames = [
   "januar",
@@ -89,6 +89,12 @@ const businessSetupMessage = document.querySelector("#businessSetupMessage");
 const embedCompanyName = document.querySelector("#embedCompanyName");
 const embedCode = document.querySelector("#embedCode");
 const copyEmbedCode = document.querySelector("#copyEmbedCode");
+const overviewCompanyName = document.querySelector("#overviewCompanyName");
+const overviewCompanyMeta = document.querySelector("#overviewCompanyMeta");
+const ownedCompanySelect = document.querySelector("#ownedCompanySelect");
+const availabilityTimes = document.querySelector("#availabilityTimes");
+const availabilityMessage = document.querySelector("#availabilityMessage");
+const availableSlotsCount = document.querySelector("#availableSlotsCount");
 const authForm = document.querySelector("#authForm");
 const authEmail = document.querySelector("#authEmail");
 const authPassword = document.querySelector("#authPassword");
@@ -152,6 +158,10 @@ function makeBooking(date, time, service, name, contact, note) {
   };
 }
 
+function getCompanyTimes(company = selectedCompany) {
+  return company?.availableTimes?.length ? company.availableTimes : defaultTimes;
+}
+
 function getWeekStart(date) {
   const copy = new Date(date);
   copy.setHours(0, 0, 0, 0);
@@ -186,9 +196,10 @@ function getVisibleDays() {
 }
 
 function isBooked(dateKey, time) {
-  const companyId = selectedCompany?.id ?? companies[0].id;
+  const companyId = selectedCompany?.id ?? companies[0]?.id;
+  if (!companyId) return false;
   return bookings.some((booking) => {
-    const bookingCompanyId = booking.companyId ?? companies[0].id;
+    const bookingCompanyId = booking.companyId ?? companyId;
     return bookingCompanyId === companyId && booking.date === dateKey && booking.time === time;
   });
 }
@@ -201,6 +212,9 @@ function normalizeCompany(company) {
     category: company.category ?? "Bedrift",
     place: company.city ?? company.place ?? "",
     description: company.description ?? "Book ledig tid direkte i Bookern.",
+    availableTimes: Array.isArray(company.available_times) && company.available_times.length
+      ? company.available_times
+      : [...defaultTimes],
   };
 }
 
@@ -376,8 +390,9 @@ async function loadCompaniesFromSupabase() {
   if (!usingSupabase) return;
   const { data, error } = await supabaseClient
     .from("companies")
-    .select("id, slug, name, category, city, description")
+    .select("id, owner_id, slug, name, category, city, description, available_times")
     .eq("is_published", true)
+    .not("owner_id", "is", null)
     .order("name");
 
   if (error) {
@@ -394,7 +409,7 @@ async function loadOwnedCompanies() {
 
   const { data, error } = await supabaseClient
     .from("companies")
-    .select("id, slug, name, category, city, description")
+    .select("id, owner_id, slug, name, category, city, description, available_times")
     .eq("owner_id", currentUser.id)
     .order("name");
 
@@ -502,6 +517,32 @@ async function createSupabaseBooking(booking) {
   return normalizeBooking(data);
 }
 
+async function updateCompanyAvailability(company, availableTimes) {
+  if (!company) return;
+  const nextTimes = availableTimes.length ? availableTimes : [...defaultTimes];
+
+  if (!usingSupabase || !company.dbId) {
+    company.availableTimes = nextTimes;
+    companies = companies.map((item) => item.id === company.id ? { ...item, availableTimes: nextTimes } : item);
+    ownedCompanies = ownedCompanies.map((item) => item.id === company.id ? { ...item, availableTimes: nextTimes } : item);
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("companies")
+    .update({ available_times: nextTimes })
+    .eq("id", company.dbId)
+    .select("id, slug, name, category, city, description, available_times")
+    .single();
+
+  if (error) throw error;
+
+  const updatedCompany = normalizeCompany(data);
+  companies = companies.map((item) => item.id === updatedCompany.id ? updatedCompany : item);
+  ownedCompanies = ownedCompanies.map((item) => item.id === updatedCompany.id ? updatedCompany : item);
+  if (selectedCompany?.id === updatedCompany.id) selectedCompany = updatedCompany;
+}
+
 async function createBusinessProfile(profile, profileServices) {
   const slug = slugify(profile.name);
   if (!slug) throw new Error("Bedriften trenger et navn.");
@@ -514,6 +555,7 @@ async function createBusinessProfile(profile, profileServices) {
       category: profile.category,
       city: profile.city,
       description: profile.description,
+      available_times: defaultTimes,
     });
     companies = [...companies.filter((item) => item.id !== company.id), company];
     localBusinessServices[company.id] = profileServices;
@@ -538,6 +580,7 @@ async function createBusinessProfile(profile, profileServices) {
       business_category: profile.category,
       business_city: profile.city,
       business_description: profile.description,
+      business_available_times: defaultTimes,
       business_services: serviceRows,
     })
     .single();
@@ -563,8 +606,9 @@ async function createBusinessProfile(profile, profileServices) {
       city: profile.city,
       description: profile.description,
       is_published: true,
+      available_times: defaultTimes,
     })
-    .select("id, slug, name, category, city, description")
+    .select("id, slug, name, category, city, description, available_times")
     .single();
 
   if (companyError) throw companyError;
@@ -622,12 +666,13 @@ function renderServices() {
 
 function renderCalendar() {
   const days = getVisibleDays();
+  const companyTimes = getCompanyTimes();
   weekLabel.textContent = `${formatDate(days[0])} - ${formatDate(days[4])}`;
 
   calendarGrid.innerHTML = days
     .map((day) => {
       const dateKey = toDateKey(day);
-      const slotButtons = times
+      const slotButtons = companyTimes
         .map((time) => {
           const booked = isBooked(dateKey, time);
           const selected = selectedSlot?.date === dateKey && selectedSlot?.time === time;
@@ -654,7 +699,7 @@ function renderCalendar() {
 
   const openSlots = days.reduce((total, day) => {
     const dateKey = toDateKey(day);
-    return total + times.filter((time) => !isBooked(dateKey, time)).length;
+    return total + companyTimes.filter((time) => !isBooked(dateKey, time)).length;
   }, 0);
   openSlotsCount.textContent = openSlots;
 
@@ -673,16 +718,19 @@ function renderSelectedSlot() {
 function renderBusinessView() {
   const todayKey = toDateKey(new Date());
   const visibleDayKeys = getVisibleDays().map(toDateKey);
-  const companyId = selectedCompany?.id ?? ownedCompanies[0]?.id ?? companies[0]?.id;
+  const company = selectedCompany ?? ownedCompanies[0] ?? companies[0];
+  const companyId = company?.id;
   if (!companyId) return;
+  const companyTimes = getCompanyTimes(company);
   const visibleBookings = bookings
     .filter((booking) => (booking.companyId ?? companyId) === companyId && visibleDayKeys.includes(booking.date))
     .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
 
   todayBookings.textContent = bookings.filter((booking) => (booking.companyId ?? companyId) === companyId && booking.date === todayKey).length;
   weekBookings.textContent = visibleBookings.length;
-  weekCapacity.textContent = `${Math.round((visibleBookings.length / (visibleDayKeys.length * times.length)) * 100)}%`;
+  weekCapacity.textContent = `${Math.round((visibleBookings.length / (visibleDayKeys.length * companyTimes.length)) * 100)}%`;
   businessDayLabel.textContent = formatFullDate(todayKey);
+  availableSlotsCount.textContent = companyTimes.length;
 
   bookingList.innerHTML = visibleBookings.length
     ? visibleBookings.map(renderBookingItem).join("")
@@ -707,6 +755,29 @@ function renderEmbedPanel() {
 
   embedCompanyName.textContent = `Widget-kode for ${company.name}`;
   embedCode.value = getEmbedSnippet(company);
+}
+
+function renderOwnedCompanySelect() {
+  ownedCompanySelect.innerHTML = ownedCompanies.length
+    ? ownedCompanies.map((company) => `<option value="${company.id}" ${selectedCompany?.id === company.id ? "selected" : ""}>${company.name}</option>`).join("")
+    : `<option value="">Ingen bedrift ennå</option>`;
+}
+
+function renderOverview() {
+  const company = selectedCompany ?? ownedCompanies[0] ?? null;
+  overviewCompanyName.textContent = company?.name ?? "Ingen bedrift valgt";
+  overviewCompanyMeta.textContent = company
+    ? `${company.category} · ${company.place || "Uten sted"}`
+    : "Logg inn og legg inn en bedrift for å åpne oversikten.";
+
+  const companyTimes = getCompanyTimes(company);
+  availabilityTimes.innerHTML = defaultTimes.map((time) => `
+    <label class="time-toggle">
+      <input type="checkbox" value="${time}" ${companyTimes.includes(time) ? "checked" : ""} ${company ? "" : "disabled"}>
+      <span>${time}</span>
+    </label>
+  `).join("");
+  renderOwnedCompanySelect();
 }
 
 function renderBookingItem(booking) {
@@ -734,6 +805,7 @@ function renderAll() {
   renderCalendar();
   renderSelectedSlot();
   renderBusinessView();
+  renderOverview();
   renderEmbedPanel();
   updateBookingCopy();
 }
@@ -764,7 +836,7 @@ function setView(view) {
     panel.hidden = panel.dataset.panel !== view;
   });
 
-  intro.hidden = view === "home" || view === "business";
+  intro.hidden = view === "home" || view === "business" || view === "overview";
   if (view === "customer") {
     updateBookingCopy();
   }
@@ -797,6 +869,26 @@ serviceList.addEventListener("click", (event) => {
 
 businessSearch.addEventListener("input", renderCompanies);
 authPassword.addEventListener("input", renderPasswordChecks);
+
+ownedCompanySelect.addEventListener("change", async () => {
+  const company = ownedCompanies.find((item) => item.id === ownedCompanySelect.value);
+  if (company) await selectCompany(company);
+});
+
+availabilityTimes.addEventListener("change", async () => {
+  const company = selectedCompany ?? ownedCompanies[0];
+  if (!company) return;
+  const checkedTimes = [...availabilityTimes.querySelectorAll("input:checked")].map((input) => input.value);
+  availabilityMessage.textContent = "Lagrer tilgjengelige tider...";
+  try {
+    await updateCompanyAvailability(company, checkedTimes);
+    renderAll();
+    availabilityMessage.textContent = "Tilgjengelige tider er lagret.";
+  } catch (error) {
+    console.error("Kunne ikke lagre tilgjengelige tider", error);
+    availabilityMessage.textContent = "Kunne ikke lagre tidene. Kjør siste SQL i Supabase og prøv igjen.";
+  }
+});
 
 companyResults.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-company]");
@@ -966,10 +1058,12 @@ copyEmbedCode.addEventListener("click", async () => {
   try {
     await navigator.clipboard.writeText(embedCode.value);
     businessSetupMessage.textContent = "Embed-koden er kopiert.";
+    availabilityMessage.textContent = "Embed-koden er kopiert.";
   } catch (error) {
     console.warn("Kunne ikke kopiere embed-kode", error);
     embedCode.select();
     businessSetupMessage.textContent = "Marker koden og kopier den manuelt.";
+    availabilityMessage.textContent = "Marker koden og kopier den manuelt.";
   }
 });
 
@@ -979,19 +1073,6 @@ document.querySelectorAll("[data-view]").forEach((button) => {
 
 document.querySelectorAll("[data-view-target]").forEach((button) => {
   button.addEventListener("click", () => setView(button.dataset.viewTarget));
-});
-
-document.querySelector("#resetDemo").addEventListener("click", () => {
-  if (usingSupabase) {
-    formMessage.textContent = "Demo-nullstilling er bare tilgjengelig uten database.";
-    return;
-  }
-  localStorage.removeItem(storageKey);
-  localStorage.removeItem(storageVersionKey);
-  bookings = loadDemoBookings();
-  selectedSlot = null;
-  formMessage.textContent = "Demoen er nullstilt.";
-  renderAll();
 });
 
 async function initialize() {
@@ -1017,7 +1098,7 @@ async function initialize() {
       await selectCompany(company);
     }
   }
-  const startupView = initialView === "business" ? "business" : "home";
+  const startupView = ["business", "overview", "customer"].includes(initialView) ? initialView : "home";
   setView(isEmbed ? "customer" : startupView);
 }
 

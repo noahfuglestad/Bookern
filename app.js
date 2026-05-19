@@ -57,6 +57,7 @@ const demoVersion = "4";
 const urlParams = new URLSearchParams(window.location.search);
 const isEmbed = urlParams.get("embed") === "1";
 const initialCompanySlug = urlParams.get("company");
+const initialView = urlParams.get("view");
 const supabaseConfig = window.BookernConfig ?? {};
 const supabaseClient = window.supabase && supabaseConfig.supabaseUrl && supabaseConfig.supabaseAnonKey
   ? window.supabase.createClient(supabaseConfig.supabaseUrl, supabaseConfig.supabaseAnonKey)
@@ -730,6 +731,9 @@ signupButton.addEventListener("click", async () => {
   const { data, error } = await supabaseClient.auth.signUp({
     email: authEmail.value.trim(),
     password: authPassword.value,
+    options: {
+      emailRedirectTo: `${window.location.origin}/?view=business`,
+    },
   });
 
   if (error) {
@@ -892,7 +896,8 @@ async function initialize() {
       await selectCompany(company);
     }
   }
-  setView(isEmbed ? "customer" : "home");
+  const startupView = initialView === "business" ? "business" : "home";
+  setView(isEmbed ? "customer" : startupView);
 }
 
 initialize();

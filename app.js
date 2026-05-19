@@ -242,40 +242,49 @@ function passwordChecks() {
   return hasLength && hasSpecial;
 }
 
-async function selectWithDays(table, queryBuilder) {
-  const withDays = await queryBuilder(table).select("id, owner_id, slug, name, category, city, description, available_days, available_times");
-  if (!withDays.error) return withDays;
-  const text = getSupabaseText(withDays.error).toLowerCase();
-  if (!text.includes("available_days")) return withDays;
-  return queryBuilder(table).select("id, owner_id, slug, name, category, city, description, available_times");
-}
-
 async function loadPublicCompanies() {
   if (!usingSupabase) return;
-  const { data, error } = await selectWithDays("companies", (table) => supabaseClient
-    .from(table)
+  let result = await supabaseClient
+    .from("companies")
+    .select("id, owner_id, slug, name, category, city, description, available_days, available_times")
     .eq("is_published", true)
     .not("owner_id", "is", null)
-    .order("name"));
-  if (error) {
-    console.warn("Kunne ikke hente bedrifter", error);
+    .order("name");
+  if (result.error && getSupabaseText(result.error).toLowerCase().includes("available_days")) {
+    result = await supabaseClient
+      .from("companies")
+      .select("id, owner_id, slug, name, category, city, description, available_times")
+      .eq("is_published", true)
+      .not("owner_id", "is", null)
+      .order("name");
+  }
+  if (result.error) {
+    console.warn("Kunne ikke hente bedrifter", result.error);
     return;
   }
-  companies = data.map(normalizeCompany);
+  companies = result.data.map(normalizeCompany);
 }
 
 async function loadOwnedCompanies() {
   ownedCompanies = [];
   if (!usingSupabase || !currentUser) return;
-  const { data, error } = await selectWithDays("companies", (table) => supabaseClient
-    .from(table)
+  let result = await supabaseClient
+    .from("companies")
+    .select("id, owner_id, slug, name, category, city, description, available_days, available_times")
     .eq("owner_id", currentUser.id)
-    .order("name"));
-  if (error) {
-    console.warn("Kunne ikke hente dine bedrifter", error);
+    .order("name");
+  if (result.error && getSupabaseText(result.error).toLowerCase().includes("available_days")) {
+    result = await supabaseClient
+      .from("companies")
+      .select("id, owner_id, slug, name, category, city, description, available_times")
+      .eq("owner_id", currentUser.id)
+      .order("name");
+  }
+  if (result.error) {
+    console.warn("Kunne ikke hente dine bedrifter", result.error);
     return;
   }
-  ownedCompanies = data.map(normalizeCompany);
+  ownedCompanies = result.data.map(normalizeCompany);
   companies = [...companies.filter((company) => !ownedCompanies.some((owned) => owned.id === company.id)), ...ownedCompanies]
     .sort((a, b) => a.name.localeCompare(b.name));
   if (!selectedCompany && ownedCompanies.length) await selectCompany(ownedCompanies[0], false);

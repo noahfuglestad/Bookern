@@ -1,173 +1,180 @@
 const demoServices = [
-  { id: "klipp", name: "Konsultasjon", duration: 30, price: "490 kr" },
-  { id: "service", name: "Standard time", duration: 45, price: "690 kr" },
-  { id: "oppfolging", name: "Oppfølging", duration: 30, price: "390 kr" },
+  { id: "demo-1", name: "Konsultasjon", duration: 30, price: "490 kr" },
+  { id: "demo-2", name: "Standard time", duration: 45, price: "690 kr" },
+  { id: "demo-3", name: "Oppfølging", duration: 30, price: "390 kr" },
 ];
 
 const demoCompanies = [
   {
-    id: "nord-frisor",
+    id: "demo-bedrift",
     dbId: null,
-    name: "Nord Frisør",
-    category: "Frisør",
-    place: "Oslo sentrum",
-    description: "Klipp, styling og raske konsultasjoner for hverdagen.",
-  },
-  {
-    id: "luna-velvaere",
-    dbId: null,
-    name: "Luna Velvære",
-    category: "Velvære",
-    place: "Bergen",
-    description: "Rolige behandlinger, oppfølging og personlig pleie.",
-  },
-  {
-    id: "fjord-fysio",
-    dbId: null,
-    name: "Fjord Fysio",
-    category: "Helse",
-    place: "Trondheim",
-    description: "Fysioterapi, vurdering og korte oppfølgingstimer.",
+    name: "Demo Bedrift",
+    category: "Tjenester",
+    place: "Oslo",
+    description: "Eksempel på hvordan widgeten kan se ut på en bedrifts nettside.",
+    availableDays: [1, 2, 3, 4, 5],
+    availableTimes: ["09:00", "10:00", "11:00", "12:30", "13:30", "14:30", "15:30"],
   },
 ];
-
-let services = [...demoServices];
-let companies = [...demoCompanies];
 
 const defaultTimes = ["09:00", "10:00", "11:00", "12:30", "13:30", "14:30", "15:30"];
-const dayNames = ["Søndag", "Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag"];
-const monthNames = [
-  "januar",
-  "februar",
-  "mars",
-  "april",
-  "mai",
-  "juni",
-  "juli",
-  "august",
-  "september",
-  "oktober",
-  "november",
-  "desember",
+const defaultDays = [1, 2, 3, 4, 5];
+const editableDays = [
+  { value: 1, label: "Mandag" },
+  { value: 2, label: "Tirsdag" },
+  { value: 3, label: "Onsdag" },
+  { value: 4, label: "Torsdag" },
+  { value: 5, label: "Fredag" },
+  { value: 6, label: "Lørdag" },
+  { value: 0, label: "Søndag" },
 ];
+const dayNames = ["Søndag", "Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag"];
+const monthNames = ["januar", "februar", "mars", "april", "mai", "juni", "juli", "august", "september", "oktober", "november", "desember"];
 
-const storageKey = "bookern-bookings";
-const storageVersionKey = "bookern-demo-version";
-const demoVersion = "4";
-const urlParams = new URLSearchParams(window.location.search);
-const isEmbed = urlParams.get("embed") === "1";
-const initialCompanySlug = urlParams.get("company");
-const initialView = urlParams.get("view");
+const params = new URLSearchParams(window.location.search);
+const isEmbed = params.get("embed") === "1";
+const initialCompanySlug = params.get("company");
+const initialView = params.get("view");
 const supabaseConfig = window.BookernConfig ?? {};
 const supabaseClient = window.supabase && supabaseConfig.supabaseUrl && supabaseConfig.supabaseAnonKey
   ? window.supabase.createClient(supabaseConfig.supabaseUrl, supabaseConfig.supabaseAnonKey)
   : null;
 const usingSupabase = Boolean(supabaseClient);
-const intro = document.querySelector("[data-context='booking']");
-const introEyebrow = document.querySelector("#introEyebrow");
-const introTitle = document.querySelector("#introTitle");
-const businessSearch = document.querySelector("#businessSearch");
-const companyResults = document.querySelector("#companyResults");
-const bookingShell = document.querySelector("[data-booking-shell]");
-const serviceList = document.querySelector("#serviceList");
-const serviceTitle = document.querySelector("#serviceTitle");
-const calendarGrid = document.querySelector("#calendarGrid");
-const weekLabel = document.querySelector("#weekLabel");
-const selectedSlotEl = document.querySelector("#selectedSlot");
-const bookingTitle = document.querySelector("#bookingTitle");
-const bookingForm = document.querySelector("#bookingForm");
-const formMessage = document.querySelector("#formMessage");
-const openSlotsCount = document.querySelector("#openSlotsCount");
-const bookingList = document.querySelector("#bookingList");
-const timeline = document.querySelector("#timeline");
-const todayBookings = document.querySelector("#todayBookings");
-const weekBookings = document.querySelector("#weekBookings");
-const weekCapacity = document.querySelector("#weekCapacity");
-const businessDayLabel = document.querySelector("#businessDayLabel");
-const businessSetupForm = document.querySelector("#businessSetupForm");
-const businessSetupMessage = document.querySelector("#businessSetupMessage");
-const embedCompanyName = document.querySelector("#embedCompanyName");
-const embedCode = document.querySelector("#embedCode");
-const copyEmbedCode = document.querySelector("#copyEmbedCode");
-const overviewCompanyName = document.querySelector("#overviewCompanyName");
-const overviewCompanyMeta = document.querySelector("#overviewCompanyMeta");
-const ownedCompanySelect = document.querySelector("#ownedCompanySelect");
-const availabilityTimes = document.querySelector("#availabilityTimes");
-const availabilityMessage = document.querySelector("#availabilityMessage");
-const availableSlotsCount = document.querySelector("#availableSlotsCount");
-const authForm = document.querySelector("#authForm");
-const authEmail = document.querySelector("#authEmail");
-const authPassword = document.querySelector("#authPassword");
-const authMessage = document.querySelector("#authMessage");
-const passwordLengthCheck = document.querySelector("#passwordLengthCheck");
-const passwordSpecialCheck = document.querySelector("#passwordSpecialCheck");
-const signupButton = document.querySelector("#signupButton");
-const loginButton = document.querySelector("#loginButton");
-const logoutButton = document.querySelector("#logoutButton");
-const authRequiredSections = document.querySelectorAll("[data-auth-required]");
 
-let selectedService = services[0];
-let selectedCompany = null;
-let selectedSlot = null;
-let weekOffset = 0;
-let bookings = usingSupabase ? [] : loadDemoBookings();
-let currentUser = null;
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => [...document.querySelectorAll(selector)];
+const els = {
+  intro: $("[data-context='booking']"),
+  introEyebrow: $("#introEyebrow"),
+  introTitle: $("#introTitle"),
+  businessSearch: $("#businessSearch"),
+  companyResults: $("#companyResults"),
+  bookingShell: $("[data-booking-shell]"),
+  serviceList: $("#serviceList"),
+  serviceTitle: $("#serviceTitle"),
+  calendarGrid: $("#calendarGrid"),
+  weekLabel: $("#weekLabel"),
+  selectedSlot: $("#selectedSlot"),
+  bookingTitle: $("#bookingTitle"),
+  bookingForm: $("#bookingForm"),
+  formMessage: $("#formMessage"),
+  openSlotsCount: $("#openSlotsCount"),
+  bookingList: $("#bookingList"),
+  timeline: $("#timeline"),
+  bookingDetail: $("#bookingDetail"),
+  todayBookings: $("#todayBookings"),
+  weekBookings: $("#weekBookings"),
+  weekCapacity: $("#weekCapacity"),
+  businessDayLabel: $("#businessDayLabel"),
+  businessSetupForm: $("#businessSetupForm"),
+  businessSetupMessage: $("#businessSetupMessage"),
+  embedCompanyName: $("#embedCompanyName"),
+  embedCode: $("#embedCode"),
+  copyEmbedCode: $("#copyEmbedCode"),
+  overviewCompanyName: $("#overviewCompanyName"),
+  overviewCompanyMeta: $("#overviewCompanyMeta"),
+  ownedCompanySelect: $("#ownedCompanySelect"),
+  availabilityDays: $("#availabilityDays"),
+  availabilityTimes: $("#availabilityTimes"),
+  availabilityMessage: $("#availabilityMessage"),
+  availableSlotsCount: $("#availableSlotsCount"),
+  authForm: $("#authForm"),
+  authEmail: $("#authEmail"),
+  authPassword: $("#authPassword"),
+  authMessage: $("#authMessage"),
+  passwordLengthCheck: $("#passwordLengthCheck"),
+  passwordSpecialCheck: $("#passwordSpecialCheck"),
+  signupButton: $("#signupButton"),
+  loginButton: $("#loginButton"),
+  logoutButton: $("#logoutButton"),
+  authRequired: $$("[data-auth-required]"),
+};
+
+let companies = [...demoCompanies];
 let ownedCompanies = [];
-const localBusinessServices = {};
+let services = [...demoServices];
+let bookings = [];
+let currentUser = null;
+let selectedCompany = null;
+let selectedService = services[0];
+let selectedSlot = null;
+let selectedBookingId = null;
+let weekOffset = 0;
 
-if (isEmbed) {
-  document.body.classList.add("is-embed");
+if (isEmbed) document.body.classList.add("is-embed");
+
+function slugify(value) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/æ/g, "ae")
+    .replace(/ø/g, "o")
+    .replace(/å/g, "a")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
 }
 
-function loadDemoBookings() {
-  const saved = localStorage.getItem(storageKey);
-  const savedVersion = localStorage.getItem(storageVersionKey);
-  if (saved && savedVersion === demoVersion) {
-    return JSON.parse(saved);
-  }
-
-  const start = getWeekStart(new Date());
-  const demo = [
-    makeBooking(addDays(start, 1), "10:00", services[1], "Sara Nilsen", "sara@example.no", "Første møte"),
-    makeBooking(addDays(start, 2), "13:30", services[0], "Jonas Berg", "jonas@example.no", ""),
-    makeBooking(addDays(start, 4), "09:00", services[2], "Mina Holm", "mina@example.no", "Ring ved ankomst"),
-  ];
-  localStorage.setItem(storageKey, JSON.stringify(demo));
-  localStorage.setItem(storageVersionKey, demoVersion);
-  return demo;
-}
-
-function saveBookings() {
-  if (usingSupabase) return;
-  localStorage.setItem(storageKey, JSON.stringify(bookings));
-}
-
-function makeBooking(date, time, service, name, contact, note) {
+function normalizeCompany(company) {
   return {
-    id: `${toDateKey(date)}-${time}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    date: toDateKey(date),
-    time,
-    serviceId: service.id,
-    serviceName: service.name,
-    companyId: selectedCompany?.id ?? companies[0].id,
-    companyName: selectedCompany?.name ?? companies[0].name,
-    duration: service.duration,
-    name,
-    contact,
-    note,
+    id: company.slug ?? company.id,
+    dbId: company.id,
+    name: company.name,
+    category: company.category ?? "Bedrift",
+    place: company.city ?? company.place ?? "",
+    description: company.description ?? "Book ledig tid direkte i widgeten.",
+    availableDays: Array.isArray(company.available_days) && company.available_days.length
+      ? company.available_days.map(Number)
+      : [...defaultDays],
+    availableTimes: Array.isArray(company.available_times) && company.available_times.length
+      ? company.available_times
+      : [...defaultTimes],
   };
 }
 
-function getCompanyTimes(company = selectedCompany) {
-  return company?.availableTimes?.length ? company.availableTimes : defaultTimes;
+function normalizeService(service) {
+  return {
+    id: service.id,
+    name: service.name,
+    duration: service.duration_minutes ?? service.duration ?? 30,
+    price: service.price_text ?? service.price ?? "",
+  };
+}
+
+function normalizeBooking(booking, company = selectedCompany) {
+  return {
+    id: booking.id,
+    date: booking.booking_date ?? booking.date,
+    time: booking.start_time?.slice(0, 5) ?? booking.time,
+    serviceId: booking.service_id ?? booking.serviceId,
+    serviceName: booking.services?.name ?? booking.serviceName ?? "Time",
+    companyId: company?.id ?? booking.companyId,
+    companyName: company?.name ?? booking.companyName ?? "Bedrift",
+    duration: booking.services?.duration_minutes ?? booking.duration ?? 30,
+    name: booking.customer_name ?? booking.name,
+    contact: booking.customer_contact ?? booking.contact,
+    note: booking.note ?? "",
+  };
+}
+
+function parseSetupServices(value) {
+  return value.split("\n").map((line) => line.trim()).filter(Boolean).map((line, index) => {
+    const [name = "", duration = "30 min", price = ""] = line.split(",").map((part) => part.trim());
+    return {
+      id: `${slugify(name) || "tjeneste"}-${index + 1}`,
+      name: name || `Tjeneste ${index + 1}`,
+      duration: Number.parseInt(duration, 10) || 30,
+      price,
+      sortOrder: index + 1,
+    };
+  });
 }
 
 function getWeekStart(date) {
   const copy = new Date(date);
   copy.setHours(0, 0, 0, 0);
-  const day = copy.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  copy.setDate(copy.getDate() + diff);
+  copy.setDate(copy.getDate() + (copy.getDay() === 0 ? -6 : 1 - copy.getDay()));
   return copy;
 }
 
@@ -190,914 +197,647 @@ function formatFullDate(dateKey) {
   return `${dayNames[date.getDay()]} ${formatDate(date)}`;
 }
 
-function getVisibleDays() {
+function getVisibleDays(company = selectedCompany) {
   const start = addDays(getWeekStart(new Date()), weekOffset * 7);
-  return Array.from({ length: 5 }, (_, index) => addDays(start, index));
+  const availableDays = company?.availableDays?.length ? company.availableDays : defaultDays;
+  return Array.from({ length: 7 }, (_, index) => addDays(start, index))
+    .filter((date) => availableDays.includes(date.getDay()));
 }
 
-function isBooked(dateKey, time) {
-  const companyId = selectedCompany?.id ?? companies[0]?.id;
-  if (!companyId) return false;
-  return bookings.some((booking) => {
-    const bookingCompanyId = booking.companyId ?? companyId;
-    return bookingCompanyId === companyId && booking.date === dateKey && booking.time === time;
-  });
+function getSupabaseText(error) {
+  return [error?.code, error?.message, error?.details, error?.hint].filter(Boolean).join(" ");
 }
 
-function normalizeCompany(company) {
-  return {
-    id: company.slug ?? company.id,
-    dbId: company.id,
-    name: company.name,
-    category: company.category ?? "Bedrift",
-    place: company.city ?? company.place ?? "",
-    description: company.description ?? "Book ledig tid direkte i Bookern.",
-    availableTimes: Array.isArray(company.available_times) && company.available_times.length
-      ? company.available_times
-      : [...defaultTimes],
-  };
-}
-
-function normalizeService(service) {
-  return {
-    id: service.id,
-    name: service.name,
-    duration: service.duration_minutes ?? service.duration ?? 30,
-    price: service.price_text ?? service.price ?? "",
-  };
-}
-
-function slugify(value) {
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/æ/g, "ae")
-    .replace(/ø/g, "o")
-    .replace(/å/g, "a")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 48);
-}
-
-function parseSetupServices(value) {
-  return value
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line, index) => {
-      const [name = "", duration = "30 min", price = ""] = line.split(",").map((part) => part.trim());
-      const durationMinutes = Number.parseInt(duration, 10) || 30;
-      return {
-        id: `${slugify(name) || "tjeneste"}-${index + 1}`,
-        name: name || `Tjeneste ${index + 1}`,
-        duration: durationMinutes,
-        price,
-        sortOrder: index + 1,
-      };
-    });
-}
-
-function getEmbedSnippet(company) {
-  if (!company) return "";
-  return `<script src="${window.location.origin}/embed.js" data-bookern-business="${company.id}" data-bookern-height="820"></script>`;
-}
-
-function normalizeBooking(booking) {
-  return {
-    id: booking.id,
-    date: booking.booking_date,
-    time: booking.start_time?.slice(0, 5) ?? booking.time,
-    serviceId: booking.service_id,
-    serviceName: booking.services?.name ?? booking.serviceName ?? "Time",
-    companyId: selectedCompany?.id ?? booking.companyId ?? booking.company_id,
-    companyName: booking.companies?.name ?? booking.companyName ?? selectedCompany?.name ?? "Bedrift",
-    duration: booking.services?.duration_minutes ?? booking.duration ?? 30,
-    name: booking.customer_name,
-    contact: booking.customer_contact,
-    note: booking.note ?? "",
-  };
-}
-
-function updateAuthView() {
-  const isAuthed = Boolean(currentUser);
-  authRequiredSections.forEach((section) => {
-    section.hidden = usingSupabase && !isAuthed;
-  });
-
-  if (!usingSupabase) {
-    authForm.classList.add("is-authenticated");
-    authMessage.textContent = "Lokal demo uten innlogging. Koble Supabase for privat bedriftsdashboard.";
-    logoutButton.hidden = true;
-    return;
+function friendlySaveError(error) {
+  const text = getSupabaseText(error).toLowerCase();
+  if (text.includes("row-level security") || text.includes("rls")) {
+    return "Supabase stopper lagringen med tilgangsregler. Kjør siste SQL fra supabase/schema.sql, logg ut og inn igjen, og prøv på nytt.";
   }
-
-  authForm.classList.toggle("is-authenticated", isAuthed);
-  logoutButton.hidden = !isAuthed;
-  loginButton.hidden = isAuthed;
-  signupButton.hidden = isAuthed;
-  authEmail.required = !isAuthed;
-  authPassword.required = !isAuthed;
-  authEmail.disabled = isAuthed;
-  authPassword.disabled = isAuthed;
-  authMessage.textContent = isAuthed
-    ? `Logget inn som ${currentUser.email}.`
-    : "Logg inn eller opprett konto for å åpne bedriftsdashboardet.";
-}
-
-function getAuthErrorMessage(error, mode) {
-  const code = error?.code ?? "";
-  const message = error?.message ?? "";
-  const normalized = `${code} ${message}`.toLowerCase();
-
-  if (normalized.includes("invalid login") || normalized.includes("invalid_credentials")) {
-    return "Feil e-post eller passord. Sjekk at kontoen er opprettet, og prøv å skrive passordet på nytt.";
-  }
-
-  if (normalized.includes("email not confirmed")) {
-    return "E-posten er ikke bekreftet ennå. Sjekk innboksen eller slå av e-postbekreftelse i Supabase mens du tester.";
-  }
-
-  if (normalized.includes("already") || normalized.includes("registered") || normalized.includes("exists")) {
-    return "Denne e-posten ser allerede ut til å være registrert. Prøv å logge inn i stedet.";
-  }
-
-  if (normalized.includes("weak_password") || normalized.includes("password")) {
-    return "Passordet er ikke godkjent. Bruk minst 6 tegn og minst 1 spesialtegn, for eksempel !, ? eller #.";
-  }
-
-  if (normalized.includes("email") || normalized.includes("invalid")) {
-    return "E-postadressen ser ikke gyldig ut. Bruk en vanlig adresse, for eksempel navn@bedrift.no.";
-  }
-
-  if (normalized.includes("rate") || normalized.includes("too many")) {
-    return "Det er gjort for mange forsøk på kort tid. Vent litt og prøv igjen.";
-  }
-
-  return mode === "login"
-    ? `Kunne ikke logge inn: ${message || "ukjent feil"}. Prøv igjen, eller opprett konto hvis du ikke har en.`
-    : `Kunne ikke opprette konto: ${message || "ukjent feil"}. Prøv en gyldig e-post og et passord på minst 6 tegn.`;
-}
-
-function getSupabaseErrorText(error) {
-  return [error?.code, error?.message, error?.details, error?.hint]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
-}
-
-function getBusinessPublishErrorMessage(error) {
-  const errorText = getSupabaseErrorText(error);
-  const normalized = errorText.toLowerCase();
-
-  if (normalized.includes("row-level security") || normalized.includes("rls")) {
-    return "Supabase stopper publisering med tilgangsregler. Kjør siste SQL fra supabase/schema.sql i Supabase SQL Editor, logg ut og inn igjen, og prøv på nytt.";
-  }
-
-  if (normalized.includes("duplicate") || normalized.includes("unique") || normalized.includes("companies_slug_key")) {
+  if (text.includes("duplicate") || text.includes("unique")) {
     return "Dette bedriftsnavnet finnes allerede. Prøv et litt annet navn, for eksempel med sted eller avdeling.";
   }
-
-  if (normalized.includes("jwt") || normalized.includes("auth") || normalized.includes("logget inn")) {
-    return "Innloggingen er utløpt. Logg ut, logg inn igjen, og prøv å publisere på nytt.";
+  if (text.includes("jwt") || text.includes("auth")) {
+    return "Innloggingen er utløpt. Logg ut, logg inn igjen, og prøv å lagre på nytt.";
   }
-
-  if (normalized.includes("function") || normalized.includes("schema cache")) {
-    return "Supabase mangler siste database-oppsett. Kjør siste SQL fra supabase/schema.sql i Supabase SQL Editor, og prøv igjen.";
-  }
-
-  return errorText
-    ? `Kunne ikke publisere bedriften. Supabase sier: ${errorText}`
-    : "Kunne ikke publisere bedriften akkurat nå. Prøv igjen.";
+  return getSupabaseText(error) ? `Kunne ikke lagre bedriften. Supabase sier: ${getSupabaseText(error)}` : "Kunne ikke lagre bedriften akkurat nå.";
 }
 
-function getPasswordChecks(password) {
-  return {
-    hasLength: password.length >= 6,
-    hasSpecial: /[^A-Za-z0-9]/.test(password),
-  };
+function authError(error, mode) {
+  const text = getSupabaseText(error).toLowerCase();
+  if (text.includes("invalid login") || text.includes("invalid_credentials")) return "Feil e-post eller passord.";
+  if (text.includes("email not confirmed")) return "E-posten er ikke bekreftet ennå. Sjekk innboksen.";
+  if (text.includes("already") || text.includes("registered")) return "Denne e-posten finnes allerede. Prøv å logge inn.";
+  if (text.includes("password")) return "Passordet må ha minst 6 tegn og minst 1 spesialtegn.";
+  return mode === "login" ? "Kunne ikke logge inn. Prøv igjen." : "Kunne ikke opprette konto. Prøv igjen.";
 }
 
-function renderPasswordChecks() {
-  const checks = getPasswordChecks(authPassword.value);
-  passwordLengthCheck.classList.toggle("is-valid", checks.hasLength);
-  passwordSpecialCheck.classList.toggle("is-valid", checks.hasSpecial);
-  passwordLengthCheck.textContent = `${checks.hasLength ? "✓" : "✕"} Minst 6 tegn`;
-  passwordSpecialCheck.textContent = `${checks.hasSpecial ? "✓" : "✕"} Minst 1 spesialtegn`;
+function passwordChecks() {
+  const value = els.authPassword.value;
+  const hasLength = value.length >= 6;
+  const hasSpecial = /[^A-Za-z0-9]/.test(value);
+  els.passwordLengthCheck.classList.toggle("is-valid", hasLength);
+  els.passwordSpecialCheck.classList.toggle("is-valid", hasSpecial);
+  els.passwordLengthCheck.textContent = `${hasLength ? "✓" : "✕"} Minst 6 tegn`;
+  els.passwordSpecialCheck.textContent = `${hasSpecial ? "✓" : "✕"} Minst 1 spesialtegn`;
+  return hasLength && hasSpecial;
 }
 
-async function loadCompaniesFromSupabase() {
+async function selectWithDays(table, queryBuilder) {
+  const withDays = await queryBuilder(table).select("id, owner_id, slug, name, category, city, description, available_days, available_times");
+  if (!withDays.error) return withDays;
+  const text = getSupabaseText(withDays.error).toLowerCase();
+  if (!text.includes("available_days")) return withDays;
+  return queryBuilder(table).select("id, owner_id, slug, name, category, city, description, available_times");
+}
+
+async function loadPublicCompanies() {
   if (!usingSupabase) return;
-  const { data, error } = await supabaseClient
-    .from("companies")
-    .select("id, owner_id, slug, name, category, city, description, available_times")
+  const { data, error } = await selectWithDays("companies", (table) => supabaseClient
+    .from(table)
     .eq("is_published", true)
     .not("owner_id", "is", null)
-    .order("name");
-
+    .order("name"));
   if (error) {
-    console.warn("Kunne ikke hente bedrifter fra Supabase", error);
+    console.warn("Kunne ikke hente bedrifter", error);
     return;
   }
-
   companies = data.map(normalizeCompany);
 }
 
 async function loadOwnedCompanies() {
   ownedCompanies = [];
   if (!usingSupabase || !currentUser) return;
-
-  const { data, error } = await supabaseClient
-    .from("companies")
-    .select("id, owner_id, slug, name, category, city, description, available_times")
+  const { data, error } = await selectWithDays("companies", (table) => supabaseClient
+    .from(table)
     .eq("owner_id", currentUser.id)
-    .order("name");
-
+    .order("name"));
   if (error) {
-    console.warn("Kunne ikke hente dine bedrifter fra Supabase", error);
+    console.warn("Kunne ikke hente dine bedrifter", error);
     return;
   }
-
   ownedCompanies = data.map(normalizeCompany);
-  companies = [
-    ...companies.filter((company) => !ownedCompanies.some((owned) => owned.id === company.id)),
-    ...ownedCompanies,
-  ].sort((a, b) => a.name.localeCompare(b.name));
-
-  if (!isEmbed && !initialCompanySlug && !selectedCompany && ownedCompanies.length) {
-    await selectCompany(ownedCompanies[0]);
-  }
+  companies = [...companies.filter((company) => !ownedCompanies.some((owned) => owned.id === company.id)), ...ownedCompanies]
+    .sort((a, b) => a.name.localeCompare(b.name));
+  if (!selectedCompany && ownedCompanies.length) await selectCompany(ownedCompanies[0], false);
 }
 
-async function loadCompanyServices(company) {
+async function loadServices(company) {
   if (!usingSupabase || !company?.dbId) {
-    services = localBusinessServices[company?.id] ?? [...demoServices];
+    services = [...demoServices];
     selectedService = services[0];
     return;
   }
-
   const { data, error } = await supabaseClient
     .from("services")
     .select("id, name, duration_minutes, price_text")
     .eq("company_id", company.dbId)
     .eq("is_active", true)
     .order("sort_order");
-
-  if (error || !data?.length) {
-    console.warn("Kunne ikke hente tjenester fra Supabase", error);
-    services = [...demoServices];
-  } else {
-    services = data.map(normalizeService);
-  }
+  services = error || !data?.length ? [...demoServices] : data.map(normalizeService);
   selectedService = services[0];
 }
 
-async function loadCompanyBookings(company) {
+async function loadBookings(company) {
+  bookings = [];
   if (!usingSupabase || !company?.dbId) return;
-
-  const canReadDetails = currentUser && ownedCompanies.some((ownedCompany) => ownedCompany.dbId === company.dbId);
-  if (canReadDetails) {
-    const { data, error } = await supabaseClient
+  const isOwner = ownedCompanies.some((owned) => owned.dbId === company.dbId);
+  const query = isOwner
+    ? supabaseClient
       .from("appointments")
-      .select("id, booking_date, start_time, customer_name, customer_contact, note, service_id, company_id, services(name, duration_minutes)")
+      .select("id, booking_date, start_time, customer_name, customer_contact, note, service_id, services(name, duration_minutes)")
       .eq("company_id", company.dbId)
       .in("status", ["booked", "confirmed"])
       .order("booking_date")
-      .order("start_time");
-
-    if (error) {
-      console.warn("Kunne ikke hente bookinger fra Supabase", error);
-      return;
-    }
-
-    bookings = data.map((booking) => normalizeBooking({ ...booking, companyId: company.id, companyName: company.name }));
-    return;
-  }
-
-  const { data, error } = await supabaseClient.rpc("get_booked_slots", {
-    target_company_id: company.dbId,
-  });
-
+      .order("start_time")
+    : supabaseClient.rpc("get_booked_slots", { target_company_id: company.dbId });
+  const { data, error } = await query;
   if (error) {
-    console.warn("Kunne ikke hente bookinger fra Supabase", error);
+    console.warn("Kunne ikke hente bookinger", error);
     return;
   }
-
-  bookings = data.map((slot) => ({
-    id: `${slot.company_id}-${slot.booking_date}-${slot.start_time}`,
-    date: slot.booking_date,
-    time: slot.start_time?.slice(0, 5),
-    companyId: company.id,
-    companyName: company.name,
-    serviceName: "Opptatt",
-    duration: 30,
-    name: "Opptatt",
-    contact: "",
-    note: "",
-  }));
+  bookings = isOwner
+    ? data.map((booking) => normalizeBooking(booking, company))
+    : data.map((slot) => normalizeBooking({
+      id: `${slot.company_id}-${slot.booking_date}-${slot.start_time}`,
+      booking_date: slot.booking_date,
+      start_time: slot.start_time,
+      customer_name: "Opptatt",
+      customer_contact: "",
+      serviceName: "Opptatt",
+    }, company));
 }
 
-async function createSupabaseBooking(booking) {
-  const { data, error } = await supabaseClient
-    .from("appointments")
-    .insert({
-      company_id: selectedCompany.dbId,
-      service_id: selectedService.id,
-      booking_date: booking.date,
-      start_time: booking.time,
-      customer_name: booking.name,
-      customer_contact: booking.contact,
-      note: booking.note,
-      status: "booked",
-    })
-    .select("id, booking_date, start_time, customer_name, customer_contact, note, service_id, company_id, services(name, duration_minutes)")
-    .single();
-
-  if (error) throw error;
-  return normalizeBooking(data);
+async function selectCompany(company, shouldRender = true) {
+  selectedCompany = company;
+  selectedSlot = null;
+  selectedBookingId = null;
+  weekOffset = 0;
+  await loadServices(company);
+  await loadBookings(company);
+  if (shouldRender) renderAll();
 }
 
-async function updateCompanyAvailability(company, availableTimes) {
-  if (!company) return;
-  const nextTimes = availableTimes.length ? availableTimes : [...defaultTimes];
-
-  if (!usingSupabase || !company.dbId) {
-    company.availableTimes = nextTimes;
-    companies = companies.map((item) => item.id === company.id ? { ...item, availableTimes: nextTimes } : item);
-    ownedCompanies = ownedCompanies.map((item) => item.id === company.id ? { ...item, availableTimes: nextTimes } : item);
-    return;
-  }
-
-  const { data, error } = await supabaseClient
-    .from("companies")
-    .update({ available_times: nextTimes })
-    .eq("id", company.dbId)
-    .select("id, slug, name, category, city, description, available_times")
-    .single();
-
-  if (error) throw error;
-
-  const updatedCompany = normalizeCompany(data);
-  companies = companies.map((item) => item.id === updatedCompany.id ? updatedCompany : item);
-  ownedCompanies = ownedCompanies.map((item) => item.id === updatedCompany.id ? updatedCompany : item);
-  if (selectedCompany?.id === updatedCompany.id) selectedCompany = updatedCompany;
-}
-
-async function createBusinessProfile(profile, profileServices) {
+async function saveCompany(profile, profileServices) {
   const slug = slugify(profile.name);
   if (!slug) throw new Error("Bedriften trenger et navn.");
-
   if (!usingSupabase) {
-    const company = normalizeCompany({
-      id: slug,
-      slug,
-      name: profile.name,
-      category: profile.category,
-      city: profile.city,
-      description: profile.description,
-      available_times: defaultTimes,
-    });
-    companies = [...companies.filter((item) => item.id !== company.id), company];
-    localBusinessServices[company.id] = profileServices;
+    const company = normalizeCompany({ id: slug, slug, ...profile, city: profile.place });
+    companies = [company];
+    ownedCompanies = [company];
     return company;
   }
-
-  if (!currentUser) {
-    throw new Error("Du må være logget inn for å opprette en bedrift.");
-  }
-
-  const serviceRows = profileServices.map((service) => ({
-    name: service.name,
-    duration_minutes: service.duration,
-    price_text: service.price,
-    sort_order: service.sortOrder,
-  }));
-
-  const { data: rpcCompanyData, error: rpcError } = await supabaseClient
-    .rpc("create_bookern_business", {
-      business_slug: slug,
-      business_name: profile.name,
-      business_category: profile.category,
-      business_city: profile.city,
-      business_description: profile.description,
-      business_available_times: defaultTimes,
-      business_services: serviceRows,
-    })
-    .single();
-
-  if (!rpcError) {
-    const company = normalizeCompany(rpcCompanyData);
-    companies = [...companies.filter((item) => item.id !== company.id), company].sort((a, b) => a.name.localeCompare(b.name));
-    ownedCompanies = [...ownedCompanies.filter((item) => item.id !== company.id), company].sort((a, b) => a.name.localeCompare(b.name));
-    return company;
-  }
-
-  const canUseDirectInsertFallback = ["42883", "PGRST202"].includes(rpcError.code)
-    || rpcError.message?.toLowerCase().includes("function");
-  if (!canUseDirectInsertFallback) throw rpcError;
-
-  const { data: companyData, error: companyError } = await supabaseClient
+  const basePayload = {
+    owner_id: currentUser.id,
+    slug,
+    name: profile.name,
+    category: profile.category,
+    city: profile.city,
+    description: profile.description,
+    is_published: true,
+    available_days: defaultDays,
+    available_times: defaultTimes,
+  };
+  let companyResult = await supabaseClient
     .from("companies")
-    .insert({
-      owner_id: currentUser.id,
-      slug,
-      name: profile.name,
-      category: profile.category,
-      city: profile.city,
-      description: profile.description,
-      is_published: true,
-      available_times: defaultTimes,
-    })
-    .select("id, slug, name, category, city, description, available_times")
+    .insert(basePayload)
+    .select("id, slug, name, category, city, description, available_days, available_times")
     .single();
-
-  if (companyError) throw companyError;
-
-  const directServiceRows = profileServices.map((service) => ({
-    company_id: companyData.id,
+  if (companyResult.error && getSupabaseText(companyResult.error).toLowerCase().includes("available_days")) {
+    const { available_days: _days, ...fallbackPayload } = basePayload;
+    companyResult = await supabaseClient
+      .from("companies")
+      .insert(fallbackPayload)
+      .select("id, slug, name, category, city, description, available_times")
+      .single();
+  }
+  if (companyResult.error) throw companyResult.error;
+  const serviceRows = profileServices.map((service) => ({
+    company_id: companyResult.data.id,
     name: service.name,
     duration_minutes: service.duration,
     price_text: service.price,
     sort_order: service.sortOrder,
     is_active: true,
   }));
-
-  const { error: servicesError } = await supabaseClient
-    .from("services")
-    .insert(directServiceRows);
-
+  const { error: servicesError } = await supabaseClient.from("services").insert(serviceRows);
   if (servicesError) throw servicesError;
-
-  const company = normalizeCompany(companyData);
+  const company = normalizeCompany(companyResult.data);
   companies = [...companies.filter((item) => item.id !== company.id), company].sort((a, b) => a.name.localeCompare(b.name));
   ownedCompanies = [...ownedCompanies.filter((item) => item.id !== company.id), company].sort((a, b) => a.name.localeCompare(b.name));
   return company;
 }
 
-function renderCompanies() {
-  const query = businessSearch.value.trim().toLowerCase();
-  const results = companies.filter((company) => {
-    const haystack = `${company.name} ${company.category} ${company.place}`.toLowerCase();
-    return haystack.includes(query);
-  });
+async function saveAvailability() {
+  const company = selectedCompany ?? ownedCompanies[0];
+  if (!company) return;
+  const availableDays = [...els.availabilityDays.querySelectorAll("input:checked")].map((input) => Number(input.value));
+  const availableTimes = [...els.availabilityTimes.querySelectorAll("input:checked")].map((input) => input.value);
+  const nextDays = availableDays.length ? availableDays : [...defaultDays];
+  const nextTimes = availableTimes.length ? availableTimes : [...defaultTimes];
+  els.availabilityMessage.textContent = "Lagrer dager og tider...";
+  if (usingSupabase && company.dbId) {
+    const { data, error } = await supabaseClient
+      .from("companies")
+      .update({ available_days: nextDays, available_times: nextTimes })
+      .eq("id", company.dbId)
+      .select("id, slug, name, category, city, description, available_days, available_times")
+      .single();
+    if (error) {
+      els.availabilityMessage.textContent = "Kunne ikke lagre dagene. Kjør siste SQL i Supabase og prøv igjen.";
+      return;
+    }
+    const updated = normalizeCompany(data);
+    selectedCompany = updated;
+    ownedCompanies = ownedCompanies.map((item) => item.id === updated.id ? updated : item);
+    companies = companies.map((item) => item.id === updated.id ? updated : item);
+  } else {
+    company.availableDays = nextDays;
+    company.availableTimes = nextTimes;
+  }
+  renderAll();
+  els.availabilityMessage.textContent = "Dager og tider er lagret.";
+}
 
-  companyResults.innerHTML = results.length
+function isBooked(date, time) {
+  return bookings.some((booking) => booking.date === date && booking.time === time);
+}
+
+function embedSnippet(company) {
+  if (!company) return "";
+  return `<script src="${window.location.origin}/embed.js" data-bookern-business="${company.id}" data-bookern-height="820"></script>`;
+}
+
+function renderCompanies() {
+  const query = els.businessSearch.value.trim().toLowerCase();
+  const results = companies.filter((company) => `${company.name} ${company.category} ${company.place}`.toLowerCase().includes(query));
+  els.companyResults.innerHTML = results.length
     ? results.map((company) => `
-        <button class="company-card ${selectedCompany?.id === company.id ? "is-active" : ""}" type="button" data-company="${company.id}">
-          <span>${company.category}</span>
-          <strong>${company.name}</strong>
-          <div class="company-meta">${company.place}</div>
-          <p>${company.description}</p>
-        </button>
-      `).join("")
-    : `<div class="empty-state">Ingen bedrifter funnet. Prøv et annet navn, sted eller kategori.</div>`;
+      <button class="company-card ${selectedCompany?.id === company.id ? "is-active" : ""}" type="button" data-company="${company.id}">
+        <span>${company.category}</span>
+        <strong>${company.name}</strong>
+        <div class="company-meta">${company.place}</div>
+        <p>${company.description}</p>
+      </button>
+    `).join("")
+    : `<div class="empty-state">Ingen bedrifter funnet. Dette er helt greit: kundene skal vanligvis bruke widgeten på bedriftens egen nettside.</div>`;
 }
 
 function renderServices() {
-  serviceList.innerHTML = services
-    .map((service) => `
-      <button class="service-option ${service.id === selectedService.id ? "is-active" : ""}" type="button" data-service="${service.id}">
-        <strong>${service.name}</strong>
-        <span>${service.duration} min · ${service.price}</span>
-      </button>
-    `)
-    .join("");
+  els.serviceList.innerHTML = services.map((service) => `
+    <button class="service-option ${service.id === selectedService?.id ? "is-active" : ""}" type="button" data-service="${service.id}">
+      <strong>${service.name}</strong>
+      <span>${service.duration} min · ${service.price}</span>
+    </button>
+  `).join("");
 }
 
 function renderCalendar() {
   const days = getVisibleDays();
-  const companyTimes = getCompanyTimes();
-  weekLabel.textContent = `${formatDate(days[0])} - ${formatDate(days[4])}`;
-
-  calendarGrid.innerHTML = days
-    .map((day) => {
-      const dateKey = toDateKey(day);
-      const slotButtons = companyTimes
-        .map((time) => {
-          const booked = isBooked(dateKey, time);
-          const selected = selectedSlot?.date === dateKey && selectedSlot?.time === time;
+  const times = selectedCompany?.availableTimes?.length ? selectedCompany.availableTimes : defaultTimes;
+  els.weekLabel.textContent = days.length ? `${formatDate(days[0])} - ${formatDate(days[days.length - 1])}` : "Ingen dager valgt";
+  els.calendarGrid.innerHTML = days.map((day) => {
+    const date = toDateKey(day);
+    return `
+      <div class="day-column">
+        <div class="day-header">
+          <strong>${dayNames[day.getDay()]}</strong>
+          <span>${formatDate(day)}</span>
+        </div>
+        ${times.map((time) => {
+          const booked = isBooked(date, time);
+          const active = selectedSlot?.date === date && selectedSlot?.time === time;
           return `
-            <button class="slot-button ${booked ? "is-booked" : ""} ${selected ? "is-selected" : ""}" type="button" data-date="${dateKey}" data-time="${time}" onclick="selectSlot('${dateKey}', '${time}')" ${booked ? "disabled" : ""}>
+            <button class="slot-button ${booked ? "is-booked" : ""} ${active ? "is-selected" : ""}" type="button" data-date="${date}" data-time="${time}" ${booked ? "disabled" : ""}>
               <strong>${time}</strong>
-              <span>${booked ? "Opptatt" : `${selectedService.duration} min ledig`}</span>
+              <span>${booked ? "Opptatt" : `${selectedService?.duration ?? 30} min ledig`}</span>
             </button>
           `;
-        })
-        .join("");
-
-      return `
-        <div class="day-column">
-          <div class="day-header">
-            <strong>${dayNames[day.getDay()]}</strong>
-            <span>${formatDate(day)}</span>
-          </div>
-          ${slotButtons}
-        </div>
-      `;
-    })
-    .join("");
-
-  const openSlots = days.reduce((total, day) => {
-    const dateKey = toDateKey(day);
-    return total + companyTimes.filter((time) => !isBooked(dateKey, time)).length;
+        }).join("")}
+      </div>
+    `;
+  }).join("");
+  els.openSlotsCount.textContent = days.reduce((sum, day) => {
+    const date = toDateKey(day);
+    return sum + times.filter((time) => !isBooked(date, time)).length;
   }, 0);
-  openSlotsCount.textContent = openSlots;
-
 }
 
-function renderSelectedSlot() {
-  if (!selectedSlot) {
-    selectedSlotEl.textContent = selectedCompany
-      ? `Velg en ledig tid hos ${selectedCompany.name}.`
-      : "Velg en bedrift før du booker.";
+function renderBookingCopy() {
+  if (!selectedCompany) {
+    els.introEyebrow.textContent = "Widget-demo";
+    els.introTitle.textContent = "Velg en bedrift for å forhåndsvise widgeten.";
+    els.serviceTitle.textContent = "Velg bedrift for widgeten";
+    els.bookingTitle.textContent = "Book valgt time";
+    els.bookingShell.hidden = true;
+    els.selectedSlot.textContent = "Velg en bedrift før du booker.";
     return;
   }
-  selectedSlotEl.textContent = `${selectedCompany.name}: ${selectedService.name}, ${formatFullDate(selectedSlot.date)} kl. ${selectedSlot.time}`;
-}
-
-function renderBusinessView() {
-  const todayKey = toDateKey(new Date());
-  const visibleDayKeys = getVisibleDays().map(toDateKey);
-  const company = selectedCompany ?? ownedCompanies[0] ?? companies[0];
-  const companyId = company?.id;
-  if (!companyId) return;
-  const companyTimes = getCompanyTimes(company);
-  const visibleBookings = bookings
-    .filter((booking) => (booking.companyId ?? companyId) === companyId && visibleDayKeys.includes(booking.date))
-    .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
-
-  todayBookings.textContent = bookings.filter((booking) => (booking.companyId ?? companyId) === companyId && booking.date === todayKey).length;
-  weekBookings.textContent = visibleBookings.length;
-  weekCapacity.textContent = `${Math.round((visibleBookings.length / (visibleDayKeys.length * companyTimes.length)) * 100)}%`;
-  businessDayLabel.textContent = formatFullDate(todayKey);
-  availableSlotsCount.textContent = companyTimes.length;
-
-  bookingList.innerHTML = visibleBookings.length
-    ? visibleBookings.map(renderBookingItem).join("")
-    : `<div class="empty-state">Ingen bookinger i denne uken.</div>`;
-
-  const todayItems = bookings
-    .filter((booking) => (booking.companyId ?? companyId) === companyId && booking.date === todayKey)
-    .sort((a, b) => a.time.localeCompare(b.time));
-
-  timeline.innerHTML = todayItems.length
-    ? todayItems.map(renderTimelineItem).join("")
-    : `<div class="empty-state">Ingen bookinger i dag.</div>`;
-}
-
-function renderEmbedPanel() {
-  const company = selectedCompany ?? ownedCompanies[0] ?? companies[0];
-  if (!company) {
-    embedCompanyName.textContent = "Velg eller opprett en bedrift for å lage embed-kode.";
-    embedCode.value = "";
-    return;
-  }
-
-  embedCompanyName.textContent = `Widget-kode for ${company.name}`;
-  embedCode.value = getEmbedSnippet(company);
-}
-
-function renderOwnedCompanySelect() {
-  ownedCompanySelect.innerHTML = ownedCompanies.length
-    ? ownedCompanies.map((company) => `<option value="${company.id}" ${selectedCompany?.id === company.id ? "selected" : ""}>${company.name}</option>`).join("")
-    : `<option value="">Ingen bedrift ennå</option>`;
+  els.introEyebrow.textContent = `Booking hos ${selectedCompany.name}`;
+  els.introTitle.textContent = `Finn en ledig time hos ${selectedCompany.name}.`;
+  els.serviceTitle.textContent = `Hva vil kunden booke hos ${selectedCompany.name}?`;
+  els.bookingTitle.textContent = `Book hos ${selectedCompany.name}`;
+  els.bookingShell.hidden = false;
+  els.selectedSlot.textContent = selectedSlot
+    ? `${selectedService.name}, ${formatFullDate(selectedSlot.date)} kl. ${selectedSlot.time}`
+    : `Velg en ledig tid hos ${selectedCompany.name}.`;
 }
 
 function renderOverview() {
   const company = selectedCompany ?? ownedCompanies[0] ?? null;
-  overviewCompanyName.textContent = company?.name ?? "Ingen bedrift valgt";
-  overviewCompanyMeta.textContent = company
-    ? `${company.category} · ${company.place || "Uten sted"}`
-    : "Logg inn og legg inn en bedrift for å åpne oversikten.";
-
-  const companyTimes = getCompanyTimes(company);
-  availabilityTimes.innerHTML = defaultTimes.map((time) => `
+  els.overviewCompanyName.textContent = company?.name ?? "Ingen bedrift valgt";
+  els.overviewCompanyMeta.textContent = company ? `${company.category} · ${company.place || "Uten sted"}` : "Logg inn og lagre en bedriftsprofil for å åpne oversikten.";
+  els.ownedCompanySelect.innerHTML = ownedCompanies.length
+    ? ownedCompanies.map((item) => `<option value="${item.id}" ${company?.id === item.id ? "selected" : ""}>${item.name}</option>`).join("")
+    : `<option value="">Ingen bedrift ennå</option>`;
+  const days = company?.availableDays?.length ? company.availableDays : defaultDays;
+  const times = company?.availableTimes?.length ? company.availableTimes : defaultTimes;
+  els.availabilityDays.innerHTML = editableDays.map((day) => `
+    <label class="time-toggle day-toggle">
+      <input type="checkbox" value="${day.value}" ${days.includes(day.value) ? "checked" : ""} ${company ? "" : "disabled"}>
+      <span>${day.label}</span>
+    </label>
+  `).join("");
+  els.availabilityTimes.innerHTML = defaultTimes.map((time) => `
     <label class="time-toggle">
-      <input type="checkbox" value="${time}" ${companyTimes.includes(time) ? "checked" : ""} ${company ? "" : "disabled"}>
+      <input type="checkbox" value="${time}" ${times.includes(time) ? "checked" : ""} ${company ? "" : "disabled"}>
       <span>${time}</span>
     </label>
   `).join("");
-  renderOwnedCompanySelect();
+  els.embedCompanyName.textContent = company ? `Widget-kode for ${company.name}` : "Velg eller opprett en bedrift for å lage embed-kode.";
+  els.embedCode.value = embedSnippet(company);
+}
+
+function renderBusinessStats() {
+  const company = selectedCompany ?? ownedCompanies[0] ?? companies[0];
+  const days = getVisibleDays(company);
+  const dayKeys = days.map(toDateKey);
+  const today = toDateKey(new Date());
+  const times = company?.availableTimes?.length ? company.availableTimes : defaultTimes;
+  const visibleBookings = bookings.filter((booking) => dayKeys.includes(booking.date)).sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
+  els.todayBookings.textContent = bookings.filter((booking) => booking.date === today).length;
+  els.weekBookings.textContent = visibleBookings.length;
+  els.weekCapacity.textContent = `${Math.round((visibleBookings.length / Math.max(1, dayKeys.length * times.length)) * 100)}%`;
+  els.availableSlotsCount.textContent = times.length;
+  els.businessDayLabel.textContent = formatFullDate(today);
+  els.bookingList.innerHTML = visibleBookings.length
+    ? visibleBookings.map(renderBookingItem).join("")
+    : `<div class="empty-state">Ingen bookinger i denne uken.</div>`;
+  const todayItems = bookings.filter((booking) => booking.date === today).sort((a, b) => a.time.localeCompare(b.time));
+  els.timeline.innerHTML = todayItems.length
+    ? todayItems.map(renderTimelineItem).join("")
+    : `<div class="empty-state">Ingen bookinger i dag.</div>`;
+  renderBookingDetail();
 }
 
 function renderBookingItem(booking) {
   return `
-    <article class="booking-item">
+    <button class="booking-item ${selectedBookingId === booking.id ? "is-active" : ""}" type="button" data-booking="${booking.id}">
       <strong>${booking.time} · ${booking.serviceName}</strong>
       <span class="booking-meta">${formatFullDate(booking.date)} · ${booking.name} · ${booking.contact}</span>
       ${booking.note ? `<p class="booking-note">${booking.note}</p>` : ""}
-    </article>
+    </button>
   `;
 }
 
 function renderTimelineItem(booking) {
   return `
-    <article class="timeline-item">
+    <button class="timeline-item ${selectedBookingId === booking.id ? "is-active" : ""}" type="button" data-booking="${booking.id}">
       <strong>${booking.time} - ${booking.name}</strong>
       <span class="booking-meta">${booking.serviceName}, ${booking.duration} min</span>
-    </article>
+    </button>
   `;
+}
+
+function renderBookingDetail() {
+  const booking = bookings.find((item) => item.id === selectedBookingId);
+  els.bookingDetail.innerHTML = booking ? `
+    <div class="detail-row"><span>Kunde</span><strong>${booking.name}</strong></div>
+    <div class="detail-row"><span>Tid</span><strong>${formatFullDate(booking.date)} kl. ${booking.time}</strong></div>
+    <div class="detail-row"><span>Tjeneste</span><strong>${booking.serviceName}, ${booking.duration} min</strong></div>
+    <div class="detail-row"><span>Kontakt</span><strong>${booking.contact || "Ikke lagt inn"}</strong></div>
+    <div class="detail-note"><span>Notat</span><p>${booking.note || "Ingen notat på denne bestillingen."}</p></div>
+  ` : `<div class="empty-state">Klikk på en bestilling for å se detaljer.</div>`;
+}
+
+function renderAuth() {
+  const authed = Boolean(currentUser);
+  els.authRequired.forEach((section) => {
+    section.hidden = usingSupabase && !authed;
+  });
+  els.authForm.classList.toggle("is-authenticated", authed || !usingSupabase);
+  els.logoutButton.hidden = !authed;
+  els.loginButton.hidden = authed;
+  els.signupButton.hidden = authed;
+  els.authEmail.disabled = authed;
+  els.authPassword.disabled = authed;
+  els.authMessage.textContent = usingSupabase
+    ? authed ? `Logget inn som ${currentUser.email}.` : "Logg inn eller opprett konto for å styre dashboardet."
+    : "Lokal demo uten innlogging.";
 }
 
 function renderAll() {
   renderCompanies();
   renderServices();
   renderCalendar();
-  renderSelectedSlot();
-  renderBusinessView();
+  renderBookingCopy();
   renderOverview();
-  renderEmbedPanel();
-  updateBookingCopy();
-}
-
-function updateBookingCopy() {
-  if (!selectedCompany) {
-    introEyebrow.textContent = "Widget-demo";
-    introTitle.textContent = "Velg en bedrift for å forhåndsvise booking-widgeten.";
-    serviceTitle.textContent = "Velg bedrift for widgeten";
-    bookingTitle.textContent = "Book valgt time";
-    bookingShell.hidden = true;
-    return;
-  }
-
-  introEyebrow.textContent = `Booking hos ${selectedCompany.name}`;
-  introTitle.textContent = `Finn en ledig time hos ${selectedCompany.name}.`;
-  serviceTitle.textContent = `Hva vil du booke hos ${selectedCompany.name}?`;
-  bookingTitle.textContent = `Book hos ${selectedCompany.name}`;
-  bookingShell.hidden = false;
+  renderBusinessStats();
+  renderAuth();
 }
 
 function setView(view) {
-  document.querySelectorAll("[data-view]").forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.view === view);
-  });
-
-  document.querySelectorAll("[data-panel]").forEach((panel) => {
+  $$("[data-view]").forEach((button) => button.classList.toggle("is-active", button.dataset.view === view));
+  $$("[data-panel]").forEach((panel) => {
     panel.hidden = panel.dataset.panel !== view;
   });
-
-  intro.hidden = view === "home" || view === "business" || view === "overview";
-  if (view === "customer") {
-    updateBookingCopy();
-  }
+  els.intro.hidden = view === "home" || view === "business" || view === "overview";
+  if (view === "customer") renderBookingCopy();
 }
 
-async function selectCompany(company) {
-  selectedCompany = company;
-  await loadCompanyServices(selectedCompany);
-  await loadCompanyBookings(selectedCompany);
-  selectedSlot = null;
-  weekOffset = 0;
-  formMessage.textContent = "";
-  renderAll();
-}
-
-window.selectSlot = function selectSlot(date, time) {
-  selectedSlot = { date, time };
-  formMessage.textContent = "";
-  renderAll();
-};
-
-serviceList.addEventListener("click", (event) => {
+els.businessSearch.addEventListener("input", renderCompanies);
+els.authPassword.addEventListener("input", passwordChecks);
+els.companyResults.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-company]");
+  if (!button) return;
+  await selectCompany(companies.find((company) => company.id === button.dataset.company));
+});
+els.serviceList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-service]");
   if (!button) return;
   selectedService = services.find((service) => service.id === button.dataset.service);
   selectedSlot = null;
-  formMessage.textContent = "";
   renderAll();
 });
-
-businessSearch.addEventListener("input", renderCompanies);
-authPassword.addEventListener("input", renderPasswordChecks);
-
-ownedCompanySelect.addEventListener("change", async () => {
-  const company = ownedCompanies.find((item) => item.id === ownedCompanySelect.value);
+els.calendarGrid.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-date]");
+  if (!button || button.disabled) return;
+  selectedSlot = { date: button.dataset.date, time: button.dataset.time };
+  renderAll();
+});
+$("#prevWeek").addEventListener("click", () => {
+  weekOffset -= 1;
+  selectedSlot = null;
+  renderAll();
+});
+$("#nextWeek").addEventListener("click", () => {
+  weekOffset += 1;
+  selectedSlot = null;
+  renderAll();
+});
+els.ownedCompanySelect.addEventListener("change", async () => {
+  const company = ownedCompanies.find((item) => item.id === els.ownedCompanySelect.value);
   if (company) await selectCompany(company);
 });
-
-availabilityTimes.addEventListener("change", async () => {
-  const company = selectedCompany ?? ownedCompanies[0];
-  if (!company) return;
-  const checkedTimes = [...availabilityTimes.querySelectorAll("input:checked")].map((input) => input.value);
-  availabilityMessage.textContent = "Lagrer tilgjengelige tider...";
-  try {
-    await updateCompanyAvailability(company, checkedTimes);
-    renderAll();
-    availabilityMessage.textContent = "Tilgjengelige tider er lagret.";
-  } catch (error) {
-    console.error("Kunne ikke lagre tilgjengelige tider", error);
-    availabilityMessage.textContent = "Kunne ikke lagre tidene. Kjør siste SQL i Supabase og prøv igjen.";
-  }
-});
-
-companyResults.addEventListener("click", async (event) => {
-  const button = event.target.closest("[data-company]");
+els.availabilityDays.addEventListener("change", saveAvailability);
+els.availabilityTimes.addEventListener("change", saveAvailability);
+els.bookingList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-booking]");
   if (!button) return;
-  const company = companies.find((item) => item.id === button.dataset.company);
-  await selectCompany(company);
+  selectedBookingId = button.dataset.booking;
+  renderBusinessStats();
 });
-
-authForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  if (!usingSupabase) {
-    authMessage.textContent = "Supabase er ikke koblet til ennå.";
-    return;
-  }
-
-  authMessage.textContent = "Logger inn...";
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email: authEmail.value.trim(),
-    password: authPassword.value,
+els.timeline.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-booking]");
+  if (!button) return;
+  selectedBookingId = button.dataset.booking;
+  renderBusinessStats();
+});
+$$("[data-scroll-target]").forEach((button) => {
+  button.addEventListener("click", () => {
+    $(`[data-dashboard-section="${button.dataset.scrollTarget}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
+});
+$$("[data-view]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
+$$("[data-view-target]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.viewTarget)));
 
+els.authForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!usingSupabase) return;
+  els.authMessage.textContent = "Logger inn...";
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email: els.authEmail.value.trim(),
+    password: els.authPassword.value,
+  });
   if (error) {
-    authMessage.textContent = getAuthErrorMessage(error, "login");
+    els.authMessage.textContent = authError(error, "login");
     return;
   }
-
   currentUser = data.user;
   await loadOwnedCompanies();
-  updateAuthView();
   renderAll();
+  setView(ownedCompanies.length ? "overview" : "business");
 });
 
-signupButton.addEventListener("click", async () => {
-  if (!usingSupabase) {
-    authMessage.textContent = "Supabase er ikke koblet til ennå.";
+els.signupButton.addEventListener("click", async () => {
+  if (!usingSupabase) return;
+  if (!els.authEmail.value.trim() || !els.authPassword.value) {
+    els.authMessage.textContent = "Skriv e-post og passord først.";
     return;
   }
-
-  if (!authEmail.value.trim() || !authPassword.value) {
-    authMessage.textContent = "Skriv e-post og passord først.";
+  if (!passwordChecks()) {
+    els.authMessage.textContent = "Passordet må ha minst 6 tegn og minst 1 spesialtegn.";
     return;
   }
-
-  const passwordChecks = getPasswordChecks(authPassword.value);
-  if (!passwordChecks.hasLength || !passwordChecks.hasSpecial) {
-    authMessage.textContent = "Passordet må ha minst 6 tegn og minst 1 spesialtegn, for eksempel !, ? eller #.";
-    renderPasswordChecks();
-    return;
-  }
-
-  authMessage.textContent = "Oppretter konto...";
+  els.authMessage.textContent = "Oppretter konto...";
   const { data, error } = await supabaseClient.auth.signUp({
-    email: authEmail.value.trim(),
-    password: authPassword.value,
-    options: {
-      emailRedirectTo: `${window.location.origin}/?view=business`,
-    },
+    email: els.authEmail.value.trim(),
+    password: els.authPassword.value,
+    options: { emailRedirectTo: `${window.location.origin}/?view=overview` },
   });
-
   if (error) {
-    authMessage.textContent = getAuthErrorMessage(error, "signup");
+    els.authMessage.textContent = authError(error, "signup");
     return;
   }
-
   currentUser = data.user ?? currentUser;
   await loadOwnedCompanies();
-  updateAuthView();
   renderAll();
-  authMessage.textContent = currentUser
-    ? `Kontoen er klar. Logget inn som ${currentUser.email}.`
-    : "Kontoen er opprettet. Sjekk e-posten din for bekreftelse før du logger inn.";
+  setView(ownedCompanies.length ? "overview" : "business");
 });
 
-logoutButton.addEventListener("click", async () => {
+els.logoutButton.addEventListener("click", async () => {
   if (!usingSupabase) return;
   await supabaseClient.auth.signOut();
   currentUser = null;
   ownedCompanies = [];
   selectedCompany = null;
   bookings = [];
-  updateAuthView();
   renderAll();
+  setView("home");
 });
 
-document.querySelector("#prevWeek").addEventListener("click", () => {
-  weekOffset -= 1;
-  selectedSlot = null;
-  renderAll();
-});
-
-document.querySelector("#nextWeek").addEventListener("click", () => {
-  weekOffset += 1;
-  selectedSlot = null;
-  renderAll();
-});
-
-bookingForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  if (!selectedSlot) {
-    formMessage.textContent = "Velg en ledig tid først.";
-    return;
-  }
-
-  const formData = new FormData(bookingForm);
-  const booking = makeBooking(
-    new Date(`${selectedSlot.date}T12:00:00`),
-    selectedSlot.time,
-    selectedService,
-    formData.get("customerName").trim(),
-    formData.get("customerContact").trim(),
-    formData.get("customerNote").trim(),
-  );
-
-  try {
-    const storedBooking = usingSupabase && selectedCompany?.dbId
-      ? await createSupabaseBooking(booking)
-      : booking;
-    bookings = [...bookings, storedBooking];
-    saveBookings();
-  } catch (error) {
-    console.error("Kunne ikke lagre booking", error);
-    formMessage.textContent = "Kunne ikke lagre timen akkurat nå. Prøv igjen.";
-    return;
-  }
-  bookingForm.reset();
-  selectedSlot = null;
-  formMessage.textContent = "Timen er booket og lagt inn i bedriftsoversikten.";
-  renderAll();
-});
-
-businessSetupForm.addEventListener("submit", async (event) => {
+els.businessSetupForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (usingSupabase && !currentUser) {
-    businessSetupMessage.textContent = "Logg inn før du oppretter en bedrift.";
+    els.businessSetupMessage.textContent = "Logg inn før du lagrer en bedriftsprofil.";
     return;
   }
-
-  const formData = new FormData(businessSetupForm);
+  const form = new FormData(els.businessSetupForm);
   const profile = {
-    name: formData.get("businessName").trim(),
-    category: formData.get("businessCategory").trim(),
-    city: formData.get("businessCity").trim(),
-    description: formData.get("businessDescription").trim(),
+    name: form.get("businessName").trim(),
+    category: form.get("businessCategory").trim(),
+    city: form.get("businessCity").trim(),
+    description: form.get("businessDescription").trim(),
   };
-  const profileServices = parseSetupServices(formData.get("businessServices"));
-
+  const profileServices = parseSetupServices(form.get("businessServices"));
   if (!profileServices.length) {
-    businessSetupMessage.textContent = "Legg inn minst én tjeneste.";
+    els.businessSetupMessage.textContent = "Legg inn minst én tjeneste.";
     return;
   }
-
-  businessSetupMessage.textContent = "Publiserer bedriften...";
+  els.businessSetupMessage.textContent = "Lagrer profilen...";
   try {
-    const company = await createBusinessProfile(profile, profileServices);
+    const company = await saveCompany(profile, profileServices);
     await loadOwnedCompanies();
-    await selectCompany(company);
-    businessSetupForm.reset();
-    businessSetupMessage.textContent = `${company.name} er publisert. Kundene kan nå finne bedriften i søket.`;
+    await selectCompany(company, false);
+    els.businessSetupForm.reset();
+    els.businessSetupMessage.textContent = `${company.name} er lagret. Widget-koden er klar i oversikten.`;
+    renderAll();
+    setView("overview");
   } catch (error) {
-    console.error("Kunne ikke publisere bedrift", error);
-    businessSetupMessage.textContent = getBusinessPublishErrorMessage(error);
+    console.error("Kunne ikke lagre bedrift", error);
+    els.businessSetupMessage.textContent = friendlySaveError(error);
   }
 });
 
-copyEmbedCode.addEventListener("click", async () => {
-  if (!embedCode.value) return;
+els.bookingForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!selectedCompany || !selectedSlot) {
+    els.formMessage.textContent = "Velg bedrift og ledig tid først.";
+    return;
+  }
+  const form = new FormData(els.bookingForm);
+  const draft = {
+    id: `${selectedSlot.date}-${selectedSlot.time}-${Date.now()}`,
+    date: selectedSlot.date,
+    time: selectedSlot.time,
+    serviceId: selectedService.id,
+    serviceName: selectedService.name,
+    companyId: selectedCompany.id,
+    companyName: selectedCompany.name,
+    duration: selectedService.duration,
+    name: form.get("customerName").trim(),
+    contact: form.get("customerContact").trim(),
+    note: form.get("customerNote").trim(),
+  };
   try {
-    await navigator.clipboard.writeText(embedCode.value);
-    businessSetupMessage.textContent = "Embed-koden er kopiert.";
-    availabilityMessage.textContent = "Embed-koden er kopiert.";
+    if (usingSupabase && selectedCompany.dbId) {
+      const { data, error } = await supabaseClient
+        .from("appointments")
+        .insert({
+          company_id: selectedCompany.dbId,
+          service_id: selectedService.id,
+          booking_date: draft.date,
+          start_time: draft.time,
+          customer_name: draft.name,
+          customer_contact: draft.contact,
+          note: draft.note,
+          status: "booked",
+        })
+        .select("id, booking_date, start_time, customer_name, customer_contact, note, service_id, services(name, duration_minutes)")
+        .single();
+      if (error) throw error;
+      bookings = [...bookings, normalizeBooking(data, selectedCompany)];
+    } else {
+      bookings = [...bookings, draft];
+    }
+    els.bookingForm.reset();
+    selectedSlot = null;
+    els.formMessage.textContent = "Timen er booket og ligger i dashboardet.";
+    renderAll();
   } catch (error) {
-    console.warn("Kunne ikke kopiere embed-kode", error);
-    embedCode.select();
-    businessSetupMessage.textContent = "Marker koden og kopier den manuelt.";
-    availabilityMessage.textContent = "Marker koden og kopier den manuelt.";
+    console.error("Kunne ikke lagre booking", error);
+    els.formMessage.textContent = "Kunne ikke lagre timen akkurat nå.";
   }
 });
 
-document.querySelectorAll("[data-view]").forEach((button) => {
-  button.addEventListener("click", () => setView(button.dataset.view));
-});
-
-document.querySelectorAll("[data-view-target]").forEach((button) => {
-  button.addEventListener("click", () => setView(button.dataset.viewTarget));
+els.copyEmbedCode.addEventListener("click", async () => {
+  if (!els.embedCode.value) return;
+  try {
+    await navigator.clipboard.writeText(els.embedCode.value);
+    els.availabilityMessage.textContent = "Embed-koden er kopiert.";
+  } catch {
+    els.embedCode.select();
+    els.availabilityMessage.textContent = "Marker koden og kopier den manuelt.";
+  }
 });
 
 async function initialize() {
-  await loadCompaniesFromSupabase();
+  await loadPublicCompanies();
   if (usingSupabase) {
     const { data } = await supabaseClient.auth.getSession();
     currentUser = data.session?.user ?? null;
     supabaseClient.auth.onAuthStateChange(async (_event, session) => {
       currentUser = session?.user ?? null;
-      ownedCompanies = [];
       await loadOwnedCompanies();
-      updateAuthView();
       renderAll();
     });
     await loadOwnedCompanies();
   }
-  updateAuthView();
-  renderPasswordChecks();
-  renderAll();
   if (initialCompanySlug) {
     const company = companies.find((item) => item.id === initialCompanySlug);
-    if (company) {
-      await selectCompany(company);
-    }
+    if (company) await selectCompany(company, false);
   }
+  passwordChecks();
+  renderAll();
   const startupView = ["business", "overview", "customer"].includes(initialView) ? initialView : "home";
   setView(isEmbed ? "customer" : startupView);
 }

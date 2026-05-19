@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="styles.css">
     <script src="/api/bookern-settings.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=12" defer></script>
+    <script src="app.js?v=13" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -30,7 +30,7 @@
           <h1>La kunder booke direkte på nettsiden din.</h1>
           <p class="lead">Bookern gir små bedrifter en ferdig booking-widget, kalender og dashboard uten at kundene sendes bort fra bedriftens egen nettside.</p>
           <div class="hero-actions">
-            <button class="primary-button" type="button" data-view-target="overview">Åpne bedriftsoversikt</button>
+            <button class="primary-button" type="button" data-view-target="business">Start med bedriftskonto</button>
             <button class="secondary-button" type="button" data-view-target="customer">Se widget-demo</button>
           </div>
           <div class="proof-row" aria-label="Hva Bookern leverer">
@@ -93,8 +93,8 @@
         <div class="process-section">
           <div>
             <span>1</span>
-            <strong>Bedriften oppretter profil</strong>
-            <p>Legger inn navn, tjenester og kort beskrivelse.</p>
+            <strong>Bedriften lager konto</strong>
+            <p>Legger inn profil, tjenester og hvilke dager som kan bookes.</p>
           </div>
           <div>
             <span>2</span>
@@ -137,7 +137,7 @@
           <div>
             <p class="eyebrow">Bedriftsoversikt</p>
             <h1>Alt bedriften trenger å vite før neste booking.</h1>
-            <p class="lead">Se bookinger, kapasitet, widget-kode og hvilke tider kundene kan velge.</p>
+            <p class="lead">Se kalenderen, åpne bestillinger, rediger dager og tider, og hent widget-koden bedriften legger på egen nettside.</p>
           </div>
           <div class="setup-card">
             <strong id="overviewCompanyName">Ingen bedrift valgt</strong>
@@ -152,6 +152,21 @@
             <select id="ownedCompanySelect"></select>
           </label>
         </section>
+
+        <div class="dashboard-actions" data-auth-required>
+          <button class="dashboard-action" type="button" data-scroll-target="calendar">
+            <strong>Kalender</strong>
+            <span>Se kommende bookinger og kapasitet.</span>
+          </button>
+          <button class="dashboard-action" type="button" data-scroll-target="availability">
+            <strong>Dager og tider</strong>
+            <span>Bestem når kunder kan booke.</span>
+          </button>
+          <button class="dashboard-action" type="button" data-scroll-target="embed">
+            <strong>Widget-kode</strong>
+            <span>Legg Bookern på bedriftens nettside.</span>
+          </button>
+        </div>
 
         <div class="stats-row" data-auth-required>
           <article>
@@ -172,16 +187,17 @@
           </article>
         </div>
 
-        <section class="availability-panel" data-auth-required>
+        <section class="availability-panel" data-auth-required data-dashboard-section="availability">
           <div class="section-heading">
             <p class="eyebrow">Tilgjengelige tider</p>
-            <h2>Velg når kunder kan booke</h2>
+            <h2>Velg dager og tider kundene kan booke</h2>
           </div>
+          <div class="availability-days" id="availabilityDays"></div>
           <div class="availability-grid" id="availabilityTimes"></div>
           <p class="form-message" id="availabilityMessage" role="status"></p>
         </section>
 
-        <section class="embed-panel" data-auth-required>
+        <section class="embed-panel" data-auth-required data-dashboard-section="embed">
           <div class="section-heading">
             <p class="eyebrow">Embed-widget</p>
             <h2>Kode for bedriftens nettside</h2>
@@ -191,7 +207,7 @@
           <button class="secondary-button" id="copyEmbedCode" type="button">Kopier embed-kode</button>
         </section>
 
-        <div class="business-layout" data-auth-required>
+        <div class="business-layout" data-auth-required data-dashboard-section="calendar">
           <section>
             <div class="section-heading">
               <p class="eyebrow">Oversikt</p>
@@ -206,6 +222,14 @@
               <h2 id="businessDayLabel">I dag</h2>
             </div>
             <div class="timeline" id="timeline"></div>
+          </section>
+
+          <section>
+            <div class="section-heading">
+              <p class="eyebrow">Bestilling</p>
+              <h2>Detaljer</h2>
+            </div>
+            <div class="booking-detail" id="bookingDetail"></div>
           </section>
         </div>
       </section>
@@ -261,7 +285,7 @@
           <div>
             <p class="eyebrow">Bookern Dashboard</p>
             <h1>Styr booking-widgeten uten å flytte kunden bort fra nettsiden din.</h1>
-            <p class="lead">Legg inn bedrift og tjenester, kopier embed-koden og la Bookern ta seg av bookingmotoren bak kulissene.</p>
+            <p class="lead">Lag en bedriftskonto, sett opp widgeten og styr kalenderen fra én ryddig oversikt.</p>
           </div>
           <div class="setup-card">
             <strong>SaaS-modellen</strong>
@@ -299,8 +323,8 @@
 
         <section class="business-setup" data-auth-required>
           <div class="section-heading">
-            <p class="eyebrow">Legg inn bedrift</p>
-            <h2>Start med en enkel bookingprofil</h2>
+            <p class="eyebrow">Bedriftsprofil</p>
+            <h2>Lagre informasjonen widgeten skal bruke</h2>
           </div>
           <form id="businessSetupForm" class="setup-form">
             <label>
@@ -323,7 +347,7 @@
               Tjenester
               <textarea id="setupBusinessServices" name="businessServices" rows="4" placeholder="Klipp, 30 min, 490 kr&#10;Farge, 90 min, 1290 kr" required></textarea>
             </label>
-            <button class="primary-button" type="submit">Publiser bedrift</button>
+            <button class="primary-button" type="submit">Lagre profil</button>
           </form>
           <p class="form-message" id="businessSetupMessage" role="status"></p>
         </section>

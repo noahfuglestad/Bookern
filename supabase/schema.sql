@@ -44,12 +44,19 @@ alter table public.appointments enable row level security;
 drop policy if exists "Published companies are readable" on public.companies;
 create policy "Published companies are readable"
   on public.companies for select
-  using (is_published = true);
+  using (is_published = true or owner_id = auth.uid());
 
 drop policy if exists "Public can create companies" on public.companies;
-create policy "Public can create companies"
+drop policy if exists "Owners can create companies" on public.companies;
+create policy "Owners can create companies"
   on public.companies for insert
-  with check (is_published = true);
+  with check (auth.uid() is not null and owner_id = auth.uid());
+
+drop policy if exists "Owners can update companies" on public.companies;
+create policy "Owners can update companies"
+  on public.companies for update
+  using (owner_id = auth.uid())
+  with check (owner_id = auth.uid());
 
 drop policy if exists "Active services are readable" on public.services;
 create policy "Active services are readable"
@@ -59,19 +66,49 @@ create policy "Active services are readable"
     and exists (
       select 1 from public.companies
       where companies.id = services.company_id
-      and companies.is_published = true
+      and (companies.is_published = true or companies.owner_id = auth.uid())
     )
   );
 
 drop policy if exists "Public can create services" on public.services;
-create policy "Public can create services"
+drop policy if exists "Owners can create services" on public.services;
+create policy "Owners can create services"
   on public.services for insert
   with check (
     is_active = true
     and exists (
       select 1 from public.companies
       where companies.id = services.company_id
-      and companies.is_published = true
+      and companies.owner_id = auth.uid()
+    )
+  );
+
+drop policy if exists "Owners can update services" on public.services;
+create policy "Owners can update services"
+  on public.services for update
+  using (
+    exists (
+      select 1 from public.companies
+      where companies.id = services.company_id
+      and companies.owner_id = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.companies
+      where companies.id = services.company_id
+      and companies.owner_id = auth.uid()
+    )
+  );
+
+drop policy if exists "Owners can read appointments" on public.appointments;
+create policy "Owners can read appointments"
+  on public.appointments for select
+  using (
+    exists (
+      select 1 from public.companies
+      where companies.id = appointments.company_id
+      and companies.owner_id = auth.uid()
     )
   );
 

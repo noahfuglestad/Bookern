@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="styles.css">
     <script src="/api/bookern-settings.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=11" defer></script>
+    <script src="app.js?v=12" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -17,8 +17,9 @@
       </a>
       <nav class="view-switch" aria-label="Velg visning">
         <button class="view-button is-active" type="button" data-view="home">Start</button>
+        <button class="view-button" type="button" data-view="overview">Oversikt</button>
+        <button class="view-button" type="button" data-view="business">Bedrift</button>
         <button class="view-button" type="button" data-view="customer">Widget</button>
-        <button class="view-button" type="button" data-view="business">Dashboard</button>
       </nav>
     </header>
 
@@ -29,7 +30,7 @@
           <h1>La kunder booke direkte på nettsiden din.</h1>
           <p class="lead">Bookern gir små bedrifter en ferdig booking-widget, kalender og dashboard uten at kundene sendes bort fra bedriftens egen nettside.</p>
           <div class="hero-actions">
-            <button class="primary-button" type="button" data-view-target="business">Start med Bookern</button>
+            <button class="primary-button" type="button" data-view-target="overview">Åpne bedriftsoversikt</button>
             <button class="secondary-button" type="button" data-view-target="customer">Se widget-demo</button>
           </div>
           <div class="proof-row" aria-label="Hva Bookern leverer">
@@ -131,6 +132,84 @@
         <div class="company-results" id="companyResults"></div>
       </section>
 
+      <section class="overview-view" data-panel="overview" hidden>
+        <div class="business-start">
+          <div>
+            <p class="eyebrow">Bedriftsoversikt</p>
+            <h1>Alt bedriften trenger å vite før neste booking.</h1>
+            <p class="lead">Se bookinger, kapasitet, widget-kode og hvilke tider kundene kan velge.</p>
+          </div>
+          <div class="setup-card">
+            <strong id="overviewCompanyName">Ingen bedrift valgt</strong>
+            <p id="overviewCompanyMeta">Logg inn og legg inn en bedrift for å åpne oversikten.</p>
+            <button class="primary-button" type="button" data-view-target="business">Administrer bedrift</button>
+          </div>
+        </div>
+
+        <section class="overview-controls" data-auth-required>
+          <label>
+            Velg bedrift
+            <select id="ownedCompanySelect"></select>
+          </label>
+        </section>
+
+        <div class="stats-row" data-auth-required>
+          <article>
+            <span id="todayBookings">0</span>
+            <p>i dag</p>
+          </article>
+          <article>
+            <span id="weekBookings">0</span>
+            <p>denne uken</p>
+          </article>
+          <article>
+            <span id="weekCapacity">0%</span>
+            <p>uke fylt</p>
+          </article>
+          <article>
+            <span id="availableSlotsCount">0</span>
+            <p>tider per dag</p>
+          </article>
+        </div>
+
+        <section class="availability-panel" data-auth-required>
+          <div class="section-heading">
+            <p class="eyebrow">Tilgjengelige tider</p>
+            <h2>Velg når kunder kan booke</h2>
+          </div>
+          <div class="availability-grid" id="availabilityTimes"></div>
+          <p class="form-message" id="availabilityMessage" role="status"></p>
+        </section>
+
+        <section class="embed-panel" data-auth-required>
+          <div class="section-heading">
+            <p class="eyebrow">Embed-widget</p>
+            <h2>Kode for bedriftens nettside</h2>
+          </div>
+          <p class="embed-copy" id="embedCompanyName">Velg eller opprett en bedrift for å lage embed-kode.</p>
+          <textarea id="embedCode" rows="4" readonly></textarea>
+          <button class="secondary-button" id="copyEmbedCode" type="button">Kopier embed-kode</button>
+        </section>
+
+        <div class="business-layout" data-auth-required>
+          <section>
+            <div class="section-heading">
+              <p class="eyebrow">Oversikt</p>
+              <h2>Kommende bookinger</h2>
+            </div>
+            <div class="booking-list" id="bookingList"></div>
+          </section>
+
+          <section>
+            <div class="section-heading">
+              <p class="eyebrow">Dagsplan</p>
+              <h2 id="businessDayLabel">I dag</h2>
+            </div>
+            <div class="timeline" id="timeline"></div>
+          </section>
+        </div>
+      </section>
+
       <section class="app-shell" data-panel="customer" data-booking-shell hidden>
         <aside class="sidebar">
           <div class="section-heading">
@@ -187,7 +266,7 @@
           <div class="setup-card">
             <strong>SaaS-modellen</strong>
             <p>Bedriften eier kundeflaten. Bookern leverer widget, kalender og administrasjon.</p>
-            <button class="primary-button" type="button" data-view-target="customer">Se widget</button>
+            <button class="primary-button" type="button" data-view-target="overview">Se oversikt</button>
           </div>
         </div>
 
@@ -249,56 +328,6 @@
           <p class="form-message" id="businessSetupMessage" role="status"></p>
         </section>
 
-        <section class="embed-panel" data-auth-required>
-          <div class="section-heading">
-            <p class="eyebrow">Embed-widget</p>
-            <h2>Kode for bedriftens nettside</h2>
-          </div>
-          <p class="embed-copy" id="embedCompanyName">Velg eller opprett en bedrift for å lage embed-kode.</p>
-          <textarea id="embedCode" rows="4" readonly></textarea>
-          <button class="secondary-button" id="copyEmbedCode" type="button">Kopier embed-kode</button>
-        </section>
-
-        <div class="business-header" data-auth-required>
-          <div>
-            <p class="eyebrow">Bedrift</p>
-            <h2>Bookinger og kapasitet</h2>
-          </div>
-          <button class="secondary-button" id="resetDemo" type="button">Nullstill demo</button>
-        </div>
-
-        <div class="stats-row" data-auth-required>
-          <article>
-            <span id="todayBookings">0</span>
-            <p>i dag</p>
-          </article>
-          <article>
-            <span id="weekBookings">0</span>
-            <p>denne uken</p>
-          </article>
-          <article>
-            <span id="weekCapacity">0%</span>
-            <p>uke fylt</p>
-          </article>
-        </div>
-
-        <div class="business-layout" data-auth-required>
-          <section>
-            <div class="section-heading">
-              <p class="eyebrow">Oversikt</p>
-              <h2>Kommende bookinger</h2>
-            </div>
-            <div class="booking-list" id="bookingList"></div>
-          </section>
-
-          <section>
-            <div class="section-heading">
-              <p class="eyebrow">Dagsplan</p>
-              <h2 id="businessDayLabel">I dag</h2>
-            </div>
-            <div class="timeline" id="timeline"></div>
-          </section>
-        </div>
       </section>
     </main>
   </body>

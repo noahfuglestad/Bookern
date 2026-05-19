@@ -71,6 +71,7 @@ const els = {
   embedCompanyName: $("#embedCompanyName"),
   embedCode: $("#embedCode"),
   copyEmbedCode: $("#copyEmbedCode"),
+  paymentMessage: $("#paymentMessage"),
   overviewCompanyName: $("#overviewCompanyName"),
   overviewCompanyMeta: $("#overviewCompanyMeta"),
   ownedCompanySelect: $("#ownedCompanySelect"),
@@ -615,6 +616,10 @@ function renderAll() {
 }
 
 function setView(view) {
+  if (view === "overview" && usingSupabase && !currentUser && !isEmbed) {
+    view = "business";
+    els.authMessage.textContent = "Logg inn eller opprett konto før du åpner medlemssiden.";
+  }
   $$("[data-view]").forEach((button) => button.classList.toggle("is-active", button.dataset.view === view));
   $$("[data-panel]").forEach((panel) => {
     panel.hidden = panel.dataset.panel !== view;
@@ -678,6 +683,12 @@ $$("[data-scroll-target]").forEach((button) => {
 });
 $$("[data-view]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
 $$("[data-view-target]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.viewTarget)));
+$("[data-demo-focus]")?.addEventListener("click", () => {
+  $("#widgetDemo")?.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+$("[data-payment-button]")?.addEventListener("click", () => {
+  els.paymentMessage.textContent = "Testbetaling registrert. Opprett eller logg inn, så åpner du medlemssiden.";
+});
 
 els.authForm.addEventListener("submit", async (event) => {
   event.preventDefault();

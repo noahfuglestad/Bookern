@@ -54,6 +54,9 @@ const monthNames = [
 const storageKey = "bookern-bookings";
 const storageVersionKey = "bookern-demo-version";
 const demoVersion = "4";
+const urlParams = new URLSearchParams(window.location.search);
+const isEmbed = urlParams.get("embed") === "1";
+const initialCompanySlug = urlParams.get("company");
 const supabaseConfig = window.BookernConfig ?? {};
 const supabaseClient = window.supabase && supabaseConfig.supabaseUrl && supabaseConfig.supabaseAnonKey
   ? window.supabase.createClient(supabaseConfig.supabaseUrl, supabaseConfig.supabaseAnonKey)
@@ -86,6 +89,10 @@ let selectedCompany = null;
 let selectedSlot = null;
 let weekOffset = 0;
 let bookings = usingSupabase ? [] : loadDemoBookings();
+
+if (isEmbed) {
+  document.body.classList.add("is-embed");
+}
 
 function loadDemoBookings() {
   const saved = localStorage.getItem(storageKey);
@@ -454,6 +461,16 @@ function setView(view) {
   }
 }
 
+async function selectCompany(company) {
+  selectedCompany = company;
+  await loadCompanyServices(selectedCompany);
+  await loadCompanyBookings(selectedCompany);
+  selectedSlot = null;
+  weekOffset = 0;
+  formMessage.textContent = "";
+  renderAll();
+}
+
 window.selectSlot = function selectSlot(date, time) {
   selectedSlot = { date, time };
   formMessage.textContent = "";
@@ -474,13 +491,8 @@ businessSearch.addEventListener("input", renderCompanies);
 companyResults.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-company]");
   if (!button) return;
-  selectedCompany = companies.find((company) => company.id === button.dataset.company);
-  await loadCompanyServices(selectedCompany);
-  await loadCompanyBookings(selectedCompany);
-  selectedSlot = null;
-  weekOffset = 0;
-  formMessage.textContent = "";
-  renderAll();
+  const company = companies.find((item) => item.id === button.dataset.company);
+  await selectCompany(company);
 });
 
 document.querySelector("#prevWeek").addEventListener("click", () => {
@@ -553,7 +565,13 @@ document.querySelector("#resetDemo").addEventListener("click", () => {
 async function initialize() {
   await loadCompaniesFromSupabase();
   renderAll();
-  setView("home");
+  if (initialCompanySlug) {
+    const company = companies.find((item) => item.id === initialCompanySlug);
+    if (company) {
+      await selectCompany(company);
+    }
+  }
+  setView(isEmbed ? "customer" : "home");
 }
 
 initialize();

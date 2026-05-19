@@ -870,7 +870,7 @@ textarea:focus {
 .auth-panel,
 .business-setup,
 .overview-controls,
-availability-panel {
+.availability-panel {
   display: grid;
   gap: 18px;
   margin-bottom: 22px;

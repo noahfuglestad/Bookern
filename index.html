@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="styles.css">
     <script src="/api/config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=6" defer></script>
+    <script src="app.js?v=7" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -127,7 +127,30 @@
           </div>
         </div>
 
-        <section class="business-setup">
+        <section class="auth-panel">
+          <div class="section-heading">
+            <p class="eyebrow">Bedriftskonto</p>
+            <h2>Logg inn for å styre din Bookern-widget</h2>
+          </div>
+          <form id="authForm" class="auth-form">
+            <label>
+              E-post
+              <input id="authEmail" name="authEmail" type="email" autocomplete="email" required>
+            </label>
+            <label>
+              Passord
+              <input id="authPassword" name="authPassword" type="password" autocomplete="current-password" minlength="6" required>
+            </label>
+            <div class="auth-actions">
+              <button class="primary-button" id="loginButton" type="submit">Logg inn</button>
+              <button class="secondary-button" id="signupButton" type="button">Opprett konto</button>
+              <button class="secondary-button" id="logoutButton" type="button" hidden>Logg ut</button>
+            </div>
+          </form>
+          <p class="form-message" id="authMessage" role="status"></p>
+        </section>
+
+        <section class="business-setup" data-auth-required>
           <div class="section-heading">
             <p class="eyebrow">Legg inn bedrift</p>
             <h2>Start med en enkel bookingprofil</h2>
@@ -158,7 +181,7 @@
           <p class="form-message" id="businessSetupMessage" role="status"></p>
         </section>
 
-        <section class="embed-panel">
+        <section class="embed-panel" data-auth-required>
           <div class="section-heading">
             <p class="eyebrow">Embed-widget</p>
             <h2>Kode for bedriftens nettside</h2>
@@ -168,7 +191,7 @@
           <button class="secondary-button" id="copyEmbedCode" type="button">Kopier embed-kode</button>
         </section>
 
-        <div class="business-header">
+        <div class="business-header" data-auth-required>
           <div>
             <p class="eyebrow">Bedrift</p>
             <h2>Bookinger og kapasitet</h2>
@@ -176,7 +199,7 @@
           <button class="secondary-button" id="resetDemo" type="button">Nullstill demo</button>
         </div>
 
-        <div class="stats-row">
+        <div class="stats-row" data-auth-required>
           <article>
             <span id="todayBookings">0</span>
             <p>i dag</p>
@@ -191,7 +214,7 @@
           </article>
         </div>
 
-        <div class="business-layout">
+        <div class="business-layout" data-auth-required>
           <section>
             <div class="section-heading">
               <p class="eyebrow">Oversikt</p>

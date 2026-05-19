@@ -1,12 +1,13 @@
-const services = [
+const demoServices = [
   { id: "klipp", name: "Konsultasjon", duration: 30, price: "490 kr" },
   { id: "service", name: "Standard time", duration: 45, price: "690 kr" },
   { id: "oppfolging", name: "Oppfølging", duration: 30, price: "390 kr" },
 ];
 
-const companies = [
+const demoCompanies = [
   {
     id: "nord-frisor",
+    dbId: null,
     name: "Nord Frisør",
     category: "Frisør",
     place: "Oslo sentrum",
@@ -14,6 +15,7 @@ const companies = [
   },
   {
     id: "luna-velvaere",
+    dbId: null,
     name: "Luna Velvære",
     category: "Velvære",
     place: "Bergen",
@@ -21,12 +23,16 @@ const companies = [
   },
   {
     id: "fjord-fysio",
+    dbId: null,
     name: "Fjord Fysio",
     category: "Helse",
     place: "Trondheim",
     description: "Fysioterapi, vurdering og korte oppfølgingstimer.",
   },
 ];
+
+let services = [...demoServices];
+let companies = [...demoCompanies];
 
 const times = ["09:00", "10:00", "11:00", "12:30", "13:30", "14:30", "15:30"];
 const dayNames = ["Søndag", "Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag"];
@@ -47,7 +53,12 @@ const monthNames = [
 
 const storageKey = "bookern-bookings";
 const storageVersionKey = "bookern-demo-version";
-const demoVersion = "3";
+const demoVersion = "4";
+const supabaseConfig = window.BookernConfig ?? {};
+const supabaseClient = window.supabase && supabaseConfig.supabaseUrl && supabaseConfig.supabaseAnonKey
+  ? window.supabase.createClient(supabaseConfig.supabaseUrl, supabaseConfig.supabaseAnonKey)
+  : null;
+const usingSupabase = Boolean(supabaseClient);
 const intro = document.querySelector("[data-context='booking']");
 const introEyebrow = document.querySelector("#introEyebrow");
 const introTitle = document.querySelector("#introTitle");
@@ -74,9 +85,9 @@ let selectedService = services[0];
 let selectedCompany = null;
 let selectedSlot = null;
 let weekOffset = 0;
-let bookings = loadBookings();
+let bookings = usingSupabase ? [] : loadDemoBookings();
 
-function loadBookings() {
+function loadDemoBookings() {
   const saved = localStorage.getItem(storageKey);
   const savedVersion = localStorage.getItem(storageVersionKey);
   if (saved && savedVersion === demoVersion) {
@@ -95,6 +106,7 @@ function loadBookings() {
 }
 
 function saveBookings() {
+  if (usingSupabase) return;
   localStorage.setItem(storageKey, JSON.stringify(bookings));
 }
 
@@ -153,6 +165,127 @@ function isBooked(dateKey, time) {
     const bookingCompanyId = booking.companyId ?? companies[0].id;
     return bookingCompanyId === companyId && booking.date === dateKey && booking.time === time;
   });
+}
+
+function normalizeCompany(company) {
+  return {
+    id: company.slug ?? company.id,
+    dbId: company.id,
+    name: company.name,
+    category: company.category ?? "Bedrift",
+    place: company.city ?? company.place ?? "",
+    description: company.description ?? "Book ledig tid direkte i Bookern.",
+  };
+}
+
+function normalizeService(service) {
+  return {
+    id: service.id,
+    name: service.name,
+    duration: service.duration_minutes ?? service.duration ?? 30,
+    price: service.price_text ?? service.price ?? "",
+  };
+}
+
+function normalizeBooking(booking) {
+  return {
+    id: booking.id,
+    date: booking.booking_date,
+    time: booking.start_time?.slice(0, 5) ?? booking.time,
+    serviceId: booking.service_id,
+    serviceName: booking.services?.name ?? booking.serviceName ?? "Time",
+    companyId: booking.company_id,
+    companyName: booking.companies?.name ?? booking.companyName ?? selectedCompany?.name ?? "Bedrift",
+    duration: booking.services?.duration_minutes ?? booking.duration ?? 30,
+    name: booking.customer_name,
+    contact: booking.customer_contact,
+    note: booking.note ?? "",
+  };
+}
+
+async function loadCompaniesFromSupabase() {
+  if (!usingSupabase) return;
+  const { data, error } = await supabaseClient
+    .from("companies")
+    .select("id, slug, name, category, city, description")
+    .eq("is_published", true)
+    .order("name");
+
+  if (error) {
+    console.warn("Kunne ikke hente bedrifter fra Supabase", error);
+    return;
+  }
+
+  companies = data.map(normalizeCompany);
+}
+
+async function loadCompanyServices(company) {
+  if (!usingSupabase || !company?.dbId) {
+    services = [...demoServices];
+    selectedService = services[0];
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("services")
+    .select("id, name, duration_minutes, price_text")
+    .eq("company_id", company.dbId)
+    .eq("is_active", true)
+    .order("sort_order");
+
+  if (error || !data?.length) {
+    console.warn("Kunne ikke hente tjenester fra Supabase", error);
+    services = [...demoServices];
+  } else {
+    services = data.map(normalizeService);
+  }
+  selectedService = services[0];
+}
+
+async function loadCompanyBookings(company) {
+  if (!usingSupabase || !company?.dbId) return;
+
+  const { data, error } = await supabaseClient.rpc("get_booked_slots", {
+    target_company_id: company.dbId,
+  });
+
+  if (error) {
+    console.warn("Kunne ikke hente bookinger fra Supabase", error);
+    return;
+  }
+
+  bookings = data.map((slot) => ({
+    id: `${slot.company_id}-${slot.booking_date}-${slot.start_time}`,
+    date: slot.booking_date,
+    time: slot.start_time?.slice(0, 5),
+    companyId: slot.company_id,
+    companyName: company.name,
+    serviceName: "Opptatt",
+    duration: 30,
+    name: "Opptatt",
+    contact: "",
+    note: "",
+  }));
+}
+
+async function createSupabaseBooking(booking) {
+  const { data, error } = await supabaseClient
+    .from("appointments")
+    .insert({
+      company_id: selectedCompany.dbId,
+      service_id: selectedService.id,
+      booking_date: booking.date,
+      start_time: booking.time,
+      customer_name: booking.name,
+      customer_contact: booking.contact,
+      note: booking.note,
+      status: "booked",
+    })
+    .select("id, booking_date, start_time, customer_name, customer_contact, note, service_id, company_id, services(name, duration_minutes)")
+    .single();
+
+  if (error) throw error;
+  return normalizeBooking(data);
 }
 
 function renderCompanies() {
@@ -338,10 +471,12 @@ serviceList.addEventListener("click", (event) => {
 
 businessSearch.addEventListener("input", renderCompanies);
 
-companyResults.addEventListener("click", (event) => {
+companyResults.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-company]");
   if (!button) return;
   selectedCompany = companies.find((company) => company.id === button.dataset.company);
+  await loadCompanyServices(selectedCompany);
+  await loadCompanyBookings(selectedCompany);
   selectedSlot = null;
   weekOffset = 0;
   formMessage.textContent = "";
@@ -360,7 +495,7 @@ document.querySelector("#nextWeek").addEventListener("click", () => {
   renderAll();
 });
 
-bookingForm.addEventListener("submit", (event) => {
+bookingForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!selectedSlot) {
     formMessage.textContent = "Velg en ledig tid først.";
@@ -377,8 +512,17 @@ bookingForm.addEventListener("submit", (event) => {
     formData.get("customerNote").trim(),
   );
 
-  bookings = [...bookings, booking];
-  saveBookings();
+  try {
+    const storedBooking = usingSupabase && selectedCompany?.dbId
+      ? await createSupabaseBooking(booking)
+      : booking;
+    bookings = [...bookings, storedBooking];
+    saveBookings();
+  } catch (error) {
+    console.error("Kunne ikke lagre booking", error);
+    formMessage.textContent = "Kunne ikke lagre timen akkurat nå. Prøv igjen.";
+    return;
+  }
   bookingForm.reset();
   selectedSlot = null;
   formMessage.textContent = "Timen er booket og lagt inn i bedriftsoversikten.";
@@ -394,13 +538,22 @@ document.querySelectorAll("[data-view-target]").forEach((button) => {
 });
 
 document.querySelector("#resetDemo").addEventListener("click", () => {
+  if (usingSupabase) {
+    formMessage.textContent = "Demo-nullstilling er bare tilgjengelig uten database.";
+    return;
+  }
   localStorage.removeItem(storageKey);
   localStorage.removeItem(storageVersionKey);
-  bookings = loadBookings();
+  bookings = loadDemoBookings();
   selectedSlot = null;
   formMessage.textContent = "Demoen er nullstilt.";
   renderAll();
 });
 
-renderAll();
-setView("home");
+async function initialize() {
+  await loadCompaniesFromSupabase();
+  renderAll();
+  setView("home");
+}
+
+initialize();

@@ -361,6 +361,7 @@ main {
 .scheduler,
 .booking-panel,
 .business-view,
+.auth-panel,
 .business-setup,
 .embed-panel,
 .business-layout section {
@@ -373,6 +374,7 @@ main {
 .sidebar,
 .booking-panel,
 .business-view,
+.auth-panel,
 .business-setup,
 .embed-panel,
 .business-layout section {
@@ -580,11 +582,29 @@ textarea:focus {
   padding: 22px;
 }
 
+.auth-panel,
 .business-setup {
   display: grid;
   gap: 18px;
   margin-bottom: 22px;
   background: #fff;
+}
+
+.auth-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.auth-form.is-authenticated label,
+.auth-form.is-authenticated #loginButton,
+.auth-form.is-authenticated #signupButton {
+  display: none;
+}
+
+.auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  grid-column: 1 / -1;
 }
 
 .embed-panel {
@@ -697,6 +717,7 @@ textarea:focus {
   .business-layout,
   .welcome-view,
   .business-start,
+  .auth-form,
   .setup-form {
     grid-template-columns: 1fr;
   }

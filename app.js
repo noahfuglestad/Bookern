@@ -85,6 +85,9 @@ const weekCapacity = document.querySelector("#weekCapacity");
 const businessDayLabel = document.querySelector("#businessDayLabel");
 const businessSetupForm = document.querySelector("#businessSetupForm");
 const businessSetupMessage = document.querySelector("#businessSetupMessage");
+const embedCompanyName = document.querySelector("#embedCompanyName");
+const embedCode = document.querySelector("#embedCode");
+const copyEmbedCode = document.querySelector("#copyEmbedCode");
 
 let selectedService = services[0];
 let selectedCompany = null;
@@ -226,6 +229,11 @@ function parseSetupServices(value) {
         sortOrder: index + 1,
       };
     });
+}
+
+function getEmbedSnippet(company) {
+  if (!company) return "";
+  return `<script src="${window.location.origin}/embed.js" data-bookern-business="${company.id}" data-bookern-height="820"></script>`;
 }
 
 function normalizeBooking(booking) {
@@ -488,6 +496,18 @@ function renderBusinessView() {
     : `<div class="empty-state">Ingen bookinger i dag.</div>`;
 }
 
+function renderEmbedPanel() {
+  const company = selectedCompany ?? companies[0];
+  if (!company) {
+    embedCompanyName.textContent = "Velg eller opprett en bedrift for å lage embed-kode.";
+    embedCode.value = "";
+    return;
+  }
+
+  embedCompanyName.textContent = `Widget-kode for ${company.name}`;
+  embedCode.value = getEmbedSnippet(company);
+}
+
 function renderBookingItem(booking) {
   return `
     <article class="booking-item">
@@ -513,6 +533,7 @@ function renderAll() {
   renderCalendar();
   renderSelectedSlot();
   renderBusinessView();
+  renderEmbedPanel();
   updateBookingCopy();
 }
 
@@ -654,6 +675,18 @@ businessSetupForm.addEventListener("submit", async (event) => {
   } catch (error) {
     console.error("Kunne ikke publisere bedrift", error);
     businessSetupMessage.textContent = "Kunne ikke publisere bedriften. Sjekk at navnet ikke finnes fra før.";
+  }
+});
+
+copyEmbedCode.addEventListener("click", async () => {
+  if (!embedCode.value) return;
+  try {
+    await navigator.clipboard.writeText(embedCode.value);
+    businessSetupMessage.textContent = "Embed-koden er kopiert.";
+  } catch (error) {
+    console.warn("Kunne ikke kopiere embed-kode", error);
+    embedCode.select();
+    businessSetupMessage.textContent = "Marker koden og kopier den manuelt.";
   }
 });
 

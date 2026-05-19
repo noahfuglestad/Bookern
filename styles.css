@@ -33,6 +33,11 @@ body {
     var(--bg);
 }
 
+body.is-embed {
+  min-height: auto;
+  background: #fff;
+}
+
 button,
 input,
 textarea {
@@ -107,6 +112,36 @@ main {
   padding: 42px 0 64px;
 }
 
+.is-embed .topbar,
+.is-embed .welcome-view,
+.is-embed .customer-search {
+  display: none !important;
+}
+
+.is-embed main {
+  width: 100%;
+  padding: 0;
+}
+
+.is-embed .intro {
+  margin-bottom: 12px;
+}
+
+.is-embed .intro h1 {
+  font-size: clamp(1.65rem, 4vw, 2.7rem);
+  line-height: 1.04;
+}
+
+.is-embed .app-shell {
+  grid-template-columns: 240px minmax(0, 1fr) 300px;
+}
+
+.is-embed .sidebar,
+.is-embed .scheduler,
+.is-embed .booking-panel {
+  box-shadow: none;
+}
+
 .welcome-view {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(360px, 0.72fr);
@@ -130,6 +165,16 @@ main {
   display: grid;
   align-content: end;
   padding: clamp(28px, 5vw, 58px);
+}
+
+.welcome-hero h1,
+business-start h1 {
+  max-width: 940px;
+  margin: 0;
+  font-size: clamp(2.4rem, 6vw, 5.8rem);
+  line-height: 0.98;
+  font-weight: 850;
+  letter-spacing: 0;
 }
 
 .welcome-hero h1,

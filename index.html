@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="styles.css">
     <script src="/api/bookern-settings.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=8" defer></script>
+    <script src="app.js?v=9" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -140,7 +140,10 @@
             <label>
               Passord
               <input id="authPassword" name="authPassword" type="password" autocomplete="current-password" minlength="6" required>
-              <small class="field-hint">Minst 6 tegn. Hvis Supabase har strengere krav, viser Bookern feilen her.</small>
+              <span class="password-checklist" aria-live="polite">
+                <span class="password-check" id="passwordLengthCheck">✕ Minst 6 tegn</span>
+                <span class="password-check" id="passwordSpecialCheck">✕ Minst 1 spesialtegn</span>
+              </span>
             </label>
             <div class="auth-actions">
               <button class="primary-button" id="loginButton" type="submit">Logg inn</button>

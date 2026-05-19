@@ -534,11 +534,20 @@ label {
   font-weight: 800;
 }
 
-.field-hint {
+.password-checklist {
+  display: grid;
+  gap: 5px;
+}
+
+.password-check {
   color: var(--muted);
   font-size: 0.82rem;
   font-weight: 700;
   line-height: 1.35;
+}
+
+.password-check.is-valid {
+  color: var(--accent-strong);
 }
 
 input,

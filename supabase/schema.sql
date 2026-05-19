@@ -46,10 +46,27 @@ create policy "Published companies are readable"
   on public.companies for select
   using (is_published = true);
 
+drop policy if exists "Public can create companies" on public.companies;
+create policy "Public can create companies"
+  on public.companies for insert
+  with check (is_published = true);
+
 drop policy if exists "Active services are readable" on public.services;
 create policy "Active services are readable"
   on public.services for select
   using (
+    is_active = true
+    and exists (
+      select 1 from public.companies
+      where companies.id = services.company_id
+      and companies.is_published = true
+    )
+  );
+
+drop policy if exists "Public can create services" on public.services;
+create policy "Public can create services"
+  on public.services for insert
+  with check (
     is_active = true
     and exists (
       select 1 from public.companies
